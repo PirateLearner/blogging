@@ -67,13 +67,13 @@ Basic Usage of the Blogging App is creating blog entries and navigate among them
 
 The documentation may be found at `Read The Docs`_.
 
-  _Python: https://www.python.org/ 
-  _Django: https://www.djangoproject.com/
-  _Reversion: http://django-reversion.readthedocs.org/en/latest/
-  _Taggit: https://django-taggit.readthedocs.org/en/latest/
-  _Ckeditor: https://github.com/django-ckeditor/django-ckeditor/
-  _`Crispy Forms`:  http://django-crispy-forms.readthedocs.org/en/latest/
-  _mptt: http://django-mptt.github.io/django-mptt/
-  _django_select2: https://github.com/applegrew/django-select2
-  _here: https://github.com/PirateLearner/blogging.git
-  _`Read The Docs`: http://blogging.readthedocs.org/en/latest/ 
+.. _Python: https://www.python.org/ 
+.. _Django: https://www.djangoproject.com/
+.. _Reversion: http://django-reversion.readthedocs.org/en/latest/
+.. _Taggit: https://django-taggit.readthedocs.org/en/latest/
+.. _Ckeditor: https://github.com/django-ckeditor/django-ckeditor/
+.. _`Crispy Forms`:  http://django-crispy-forms.readthedocs.org/en/latest/
+.. _mptt: http://django-mptt.github.io/django-mptt/
+.. _django_select2: https://github.com/applegrew/django-select2
+.. _here: https://github.com/PirateLearner/blogging.git
+.. _`Read The Docs`: http://blogging.readthedocs.org/en/latest/ 
