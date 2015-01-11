@@ -75,5 +75,5 @@ The documentation may be found at `Read The Docs`_.
 .. _`Crispy Forms`:  http://django-crispy-forms.readthedocs.org/en/latest/
 .. _mptt: http://django-mptt.github.io/django-mptt/
 .. _django_select2: https://github.com/applegrew/django-select2
-.. _here: https://github.com/PirateLearner/blogging.git
+.. _here: https://github.com/PirateLearner/blogging/archive/master.zip
 .. _`Read The Docs`: http://blogging.readthedocs.org/en/latest/ 
