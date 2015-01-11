@@ -20,6 +20,7 @@ This is a sample project to demonstrate how to use the _Blogging_ app as a stand
 	```shell
 	pip install -r requirements.txt
 	```
+	
 3. Create the necessary tables:
 
 	```shell
