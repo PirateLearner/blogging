@@ -4,7 +4,7 @@ Apis and template tags are used for extending the functionality in the template 
 
 ## API
 
-Following apis can be used in the templates specified in the [templates section](../templates/):
+Following apis can be used in the templates specified in the [templates section](../latest/templates/):
 
 * get_title (return the title of the object).
 * get_summary (return the summary of blog post or blog parent).

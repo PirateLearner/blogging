@@ -4,4 +4,5 @@ pages:
 - [templates.md, Templates and Views]
 - [plugins.md, Django-CMS plugins]
 - [apis.md, Apis and Template tags]
+- [demo.md, Demo Application]
 theme: readthedocs
