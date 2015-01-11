@@ -1,0 +1,13 @@
+{% load url from future %}
+<div class="tile col-sm-12 col-md-12 col-lg-12 paper paper-raise paper-vintage">
+  	 <h2 class="tile-heading">Recent Blog Entries</h2>
+     <ul class="tile-body">
+     {% for node in instance.get_posts %}
+		<li class="recent-blog-sidebar">
+			<a class="title" href="{{node.get_absolute_url}}">
+    			 {{ node.title }}
+    		</a>
+		</li>
+	 {% endfor %}              
+     </ul>
+</div>

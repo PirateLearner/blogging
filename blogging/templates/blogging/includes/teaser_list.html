@@ -1,0 +1,35 @@
+{% load url from future %}
+{% load thumbnail %}
+<div class="media-list">
+	{% for node in nodes %}
+	<div class="media">
+		<a  class="media-left media-middle thumbnail img-responsive" href="{{node.get_absolute_url}}">
+			<img class="img-responsive" src="{{ node.get_image_url }}" style="width: 320px;height: auto;"></img>                	
+		</a>
+		<div class="media-body">
+			<h3 class="media-heading">  		
+				<a class="title" href="{{node.get_absolute_url}}">
+					 {{ node.title }}
+				</a>
+			</h3>
+			<div class="media-body text-justify">
+				{{ node.get_summary }}
+			</div>
+			{% if not parent %}
+			<div class="panel-footer">
+				<div class="pull-left">
+					<span class="glyphicon glyphicon-tags"></span> 
+					<b>Tags:</b> 
+					<ul class="label tags">
+						{% for tag in node.get_tags %}
+						 <li> <a href="#"> {{ tag.name }}</a></li>
+						{% endfor %} 
+					</ul>
+				</div>
+				<span class="pull-right"> Filed under :{{ node.get_parent.title }} </span>
+			</div>
+		  	{% endif %}
+	    </div>            
+	</div>                
+	{% endfor %}	
+</div>

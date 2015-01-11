@@ -1,0 +1,21 @@
+{% extends "blogging/base.html" %}
+{% load i18n %}
+{% block extra_script %}
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/forms.css"/>
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/base.css"/>
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/widgets.css"/>
+
+
+
+{{ form.media }}
+
+{% endblock %}
+
+{% block content_blog %}
+
+{% load crispy_forms_tags %}
+{% crispy form form.helper %}
+
+{% endblock %}
+
+

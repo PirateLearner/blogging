@@ -1,0 +1,34 @@
+{% extends "blogging/base.html" %}
+
+
+{% if parent %}
+{% block blog_breadcrumb %}
+{% endblock %}
+{% endif %}
+
+{% block title %}
+{{ content.title }}
+{% endblock %}
+ 
+{% block edit_content %}
+{% if request.user.is_authenticated %}
+      <li><a href="{{ nodes.get_absolute_url }}?edit=True">Edit Post</a></li>
+{% endif %}
+{% endblock %}
+  
+{% block content_blog %}
+	{% load blogging_tags %}
+	<div class="header-ribbon" id="overlay-target">
+	
+		<!--<div> -->
+	{% render_content content %}
+		<!-- </div> -->
+</div>
+
+{% endblock %}
+
+{% block extra_script %}
+<script src="{{ STATIC_URL }}ckeditor/ckeditor/ckeditor.js"></script>
+
+{% endblock %}
+

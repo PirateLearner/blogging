@@ -1,0 +1,69 @@
+{% extends "blogging/base.html" %}
+
+{% load staticfiles %}
+{% block title %}
+
+	Define New Content Type
+
+{% endblock %}
+{% block extra_script %}
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/forms.css"/>
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/base.css"/>
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admin/css/widgets.css"/>
+
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/core.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/jquery.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/jquery.init.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/actions.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/calendar.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}admin/js/admin/DateTimeShortcuts.js"></script>
+	<script type = "text/javascript" src = "{% static "js/form.js" %}"></script>
+
+{{ form.media }}
+
+{% endblock %}
+
+{% block content_blog %}
+
+
+
+
+
+	<h1>Define New Content</h1>
+	<br/>
+	<hr/>
+	<b>Existing Content Types</b><br>
+	{% for type in content_types %}
+		<ul>
+			<li> {{ type.content_type }} </li>
+		</ul>
+	{% endfor %}
+	<hr/>
+	<b><i>Define a new content type!</i></b>
+	<input type="button" onclick="add_new_row()" value="submit" />
+	<form action= "." method = "POST" id="new_content_type">
+	{% csrf_token %}
+		<label for="class_name">Content Type Name: </label>
+        <input type="text" name="class_name" value="">
+        
+        <input type="hidden" name="num_val" value="1" id="num_vals">
+        
+        <ul id="content_fields">
+        	<li>
+        		<label for="val_1">Field Name: </label>
+        		<input type="text" name="val_1" value="">
+        	
+        		<label for="valtype_1">Field Type: </label>
+        		<select name="valtype_1">
+        			<option value="CharField" selected>Text Field</option>
+        			<option value="ImageField">Image</option>
+        			<option value="HTMLField">Text Area</option>
+        			<option value="FileField">File Upload</option>
+        		</select>
+        	</li>
+        </ul>
+        <input type="submit" value="Create">
+	</form>
+{% endblock %}

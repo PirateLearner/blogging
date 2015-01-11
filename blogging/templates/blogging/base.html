@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load staticfiles sekizai_tags %}
+
+{% block title %}Pirate Learner (pi) Blogging App Demo {% endblock title %}
+
+{% block navbar %} 
+  {{ block.super }}
+  {% block edit_content %}
+  
+  {% endblock %}
+{% endblock %}
+
+{% block content %}
+  	<div class="starter-template container">
+  	{% block content_blog %}
+
+  	{% endblock %}
+  	</div>
+{% endblock %}

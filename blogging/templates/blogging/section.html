@@ -1,0 +1,16 @@
+{% extends "blogging/base.html" %}
+
+{% if parent %}
+	{% block blog_breadcrumb %}
+	{% endblock %}
+{% endif %}
+
+{% block title %}
+	{{ page.title }}
+{% endblock %}
+
+
+{% block content_blog %}
+	{% include "blogging/includes/section_view.html" with nodes=nodes only %}
+{% endblock %}
+

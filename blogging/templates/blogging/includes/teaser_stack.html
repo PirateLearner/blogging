@@ -1,0 +1,29 @@
+{% load url from future %}
+{% load thumbnail %}
+
+			<!-- Stacked Featured posts for this section -->
+				{% for node in nodes %}
+				<div class="media feature content-stack-article paper">
+                	<a  class="image" href="{{node.get_absolute_url}}" class="pull-left">
+						<img class="img-responsive" src="{{ node.get_image_url }}" class="media-object"></img>                	
+                	</a>
+                	<div class="feature-heading">
+                	{% if not parent %}
+                		<span class="eyebrow"> {{ node.get_parent.title }}</span>
+  					{% endif %}              		
+                		<a class="title" href="{{node.get_absolute_url}}">
+                			 {{ node.title }}
+                		</a>
+                	</div>
+                	<div class="feature-tags"><span class="glyphicon glyphicon-tags"></span> <b>Tags:</b> 
+                		<ul class="post-tags">
+                			{% for tag in node.get_tags %}
+                			 <li> <a href="#"> {{ tag.name }}</a></li>
+                			{% endfor %} 
+                		</ul>
+                	</div>
+                </div>                
+                {% endfor %}						
+						       			
+
+

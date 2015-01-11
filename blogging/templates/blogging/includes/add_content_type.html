@@ -1,0 +1,48 @@
+
+{% extends "blogging/base.html" %}
+
+{% block content_blog %}
+{% load crispy_forms_tags %}
+
+<form action="." id="id_content_type" class="form-inline" method="post">
+	<h2> Create new content type </h2>
+    {% crispy form1 form1.helper1 %}
+   
+	<table border="0" cellpadding="3" cellspacing="0">
+		<h4> Set the Fields <small> title field is already present so do not create that </small> </h4>
+		<tbody>
+			{% for forms in formset.forms %}
+    		<tr id="{{ forms.prefix }}-row" class="dynamic-form">
+				<td>{{ forms.field_name|as_crispy_field:"bootstrap3" }}</td>
+				<td>{{ forms.field_type|as_crispy_field:"bootstrap3" }}</td>
+		 		<td{% if forloop.first %} class="hidden"{% endif %}>
+					<a id="remove-{{ forms.prefix }}-row" href="javascript:void(0)" class="delete-row btn btn-danger"> Delete </a>
+				</td>
+			</tr>    
+			{% endfor %}
+ 			<tr>
+				<td colspan="4"><a href="javascript:void(0)" class="add-row">add property</a></td>
+			</tr>
+		</tbody>
+	</table>
+	{{ formset.management_form|crispy }}
+
+	<div class=form-group>
+		<input type="submit" class="btn btn-primary" /> | <a class="btn btn-danger" href="javascript:window.close()">Cancel</a>
+	</div>     
+</form>
+
+{% endblock %}
+{% block extra_script %}
+<script type="text/javascript" src="{{ STATIC_URL }}js/blogging/add_form.js"></script>
+<script type="text/javascript">
+	$(function (){
+		$('.add-row').click(function(){
+			return addForm(this, 'form');
+		});
+		$('.delete-row').click(function(){
+		return deleteForm(this, 'form');
+		})
+	})
+</script>
+{% endblock %}
