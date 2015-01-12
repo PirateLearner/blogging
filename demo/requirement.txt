@@ -10,7 +10,7 @@ django-ckeditor==4.4.4
 
 south==1.0.2
 
-pi-blogging==0.1-beta
+pi-blogging >=0.1.0b1
 # Optional, recommended packages
 
 Pillow
