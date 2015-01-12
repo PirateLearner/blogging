@@ -28,7 +28,9 @@ Apart from these stand-alone features this app can be used as Django-CMS apps al
 
 Use pip for installing the app:
 
-` pip install pi-blogging `
+` pip install pi-blogging --pre`
+
+__(Note that it is in beta version right now)__
 
 or download zip file from github - [here](https://github.com/PirateLearner/pi.git)
 

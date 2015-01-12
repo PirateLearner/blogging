@@ -30,9 +30,9 @@ Apart from these stand-alone features this app can be used as Django-CMS apps al
 
 Use pip for installing the app:
 
-    `pip install pl_blogging`
+    `pip install pi-blogging --pre`
 
-or download zip file from github -`here`_
+or download zip file from github `here`_
 
 after installation, add blogging to your installed apps and also make sure that requirements are also installed -
 
