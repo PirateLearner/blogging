@@ -6,6 +6,8 @@ from cms.plugin_pool import plugin_pool
 from blogging import models
 from blogging.forms import LatestEntriesForm, SectionPluginForm, ContactForm
 from django.core.mail import send_mail, mail_admins
+from django.contrib.auth import get_user_model
+
 
 class BlogPlugin(CMSPluginBase):
 
@@ -39,7 +41,13 @@ class ContactPlugin(BlogPlugin):
     
     def create_form(self, instance, request):
         contact_type = request.GET.get('contact_type',None)
-        
+
+        name = ''
+        email = ''
+        if request.user.is_authenticated():
+            User = request.user
+            name = User.profile.get_name()
+            email = User.profile.get_email()
         
         if contact_type is None:
             contact_type = 'Queries'
@@ -51,7 +59,7 @@ class ContactPlugin(BlogPlugin):
             return ContactForm(data=request.POST)
         else:
             print "Contact form inside get"
-            return ContactForm(initial={'contact_type':contact_type})    
+            return ContactForm(initial={'contact_type':contact_type,'name': name, 'email': email})    
     def render(self, context, instance, placeholder):
         request = context['request']
 

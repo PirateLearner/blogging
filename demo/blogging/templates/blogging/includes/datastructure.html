@@ -1,0 +1,9 @@
+{% extends "blogging/test_detail.html" %}
+	{% block custom_detail %}
+		{% autoescape off %}
+		<div class="row">
+			{{ content.Note }}
+		</div>		<div class="row">
+			{{ content.Description }}
+		</div>		{% endautoescape %}
+	{% endblock %}

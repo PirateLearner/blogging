@@ -1,0 +1,28 @@
+{% comment %}  
+{% load blogging_tags %}
+{% endcomment %}
+{% load mptt_tags %}
+
+{% recursetree nodes %}
+    <li>
+        <a href="{{ node.get_absolute_url }}"  {% ifequal node active %} id = "active-index"{% endifequal %}>{{ node.get_menu_title }} </a>
+        {% if not node.is_leaf_node %}
+            <ul>
+                {{ children }}
+            </ul>
+            
+            {% comment %}  
+        {% else %}
+        	<ul>
+        	{% get_section_children node as articles %}
+        	
+        	{% for article in articles %}
+        		<li>
+        			<a href="{{ article.get_absolute_url }}"> {{ article.get_menu_title }} </a>
+        		</li>
+        	{% endfor %}
+        	</ul>
+        	{% endcomment %}
+        {% endif %}
+    </li>
+{% endrecursetree %}

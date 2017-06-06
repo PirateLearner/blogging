@@ -1,38 +1,84 @@
 import os
-from blogging.create_class import CreateClass
+from functools import wraps
+from django.utils.decorators import available_attrs
+
+from blogging.create_class import CreateClass, CreateTemplate
 import re
-from django.template.defaultfilters import removetags
-from django.utils.html import strip_tags
+from django.utils.functional import allow_lazy
+from django.utils import six
+from django.utils.safestring import mark_safe
+from django.contrib.auth.decorators import user_passes_test
+import unicodedata
+from django.http.response import HttpResponseForbidden
 
+css_styles = {
+			'bootstrap3': {
+						'center': 'text-center',
+						'left': 'text-left',
+						'right': 'text-right',
+						'justify': 'text-justify',
+						'image': 'img-responsive',
+						'gray' : 'text-muted',
+						'float-left': 'pull-left',
+						'float-right': 'pull-right',
+						},
+			'bootstrap4': {
+						'center': 'text-xs-center',
+						'left': 'text-xs-left',
+						'right': 'text-xs-right',
+						'justify': 'text-justify',
+						'image': 'img-fluid',
+						'gray' : 'text-muted',
+						'float-left': 'pull-md-left',
+						'float-right': 'pull-md-right'
+						},
+			'mdl': {
+				},
+			}
 
-def create_content_type(name,form_dict,is_leaf):
-	filename = os.path.abspath(os.path.dirname(__file__))+"/custom/"+name.lower()+".py"
-	flag = False
-	errorstring = filename
+def get_css_styles():
 	try:
-		fd = open(filename, 'r')
+		import django.conf.settings as settings
+		if settings is not None:
+			return css_styles[settings.BLOGGING_CSS_FRAMEWORK]
+	except ImportError:
+		return css_styles['bootstrap4']
+	
+	
+def create_content_type(name,form_dict,is_leaf):
+	"""
+	This function will create the form and template for new contentype
+	"""
+	form_filename = os.path.abspath(os.path.dirname(__file__))+"/custom/"+name.lower()+".py"
+	template_filename = os.path.abspath(os.path.dirname(__file__))+"/templates/blogging/includes/"+name.lower()+".html"
+	flag = False
+	try:
+		fd = open(form_filename, 'r')
+		fd.close()
+		fd1 = open(template_filename, 'r')
+		fd1.close()
 	except IOError:
 		flag = True
-		print "No such file exists"
-		errorstring += "\nNo such file exists"
 	if flag:
 		#We are good to go. Create the Output string that must be put in it
-		print "We're in!"
-		errorstring += "\nWe're in!"
 		create_class_object = CreateClass(name, form_dict,is_leaf)
-		string = create_class_object.form_string()
+		form_string = create_class_object.form_string()
+		template_object = CreateTemplate(name, form_dict,is_leaf)
+		template_string = template_object.form_string() 
+		
 		try:
-			fd = os.fdopen(os.open(filename,os.O_CREAT| os.O_RDWR , 0555),'w')
-			fd.write(string)
+			fd = os.fdopen(os.open(form_filename,os.O_CREAT| os.O_RDWR , 0555),'w')
+			fd.write(form_string)
 			fd.close()
-			print file(filename).read()
-			errorstring +="\n"+file(filename).read()
+			fd = os.fdopen(os.open(template_filename,os.O_CREAT| os.O_RDWR , 0555),'w')
+			fd.write(template_string)
+			fd.close()
+			
+			print file(form_filename).read()
 			return True
 		except IOError:
 			print "Error Opening File for Writing"
-			errorstring += "\nError Opening file for writing"
 			return False
-
 	else:
 		return False
 
@@ -41,14 +87,18 @@ def create_content_type(name,form_dict,is_leaf):
 	
 
 def get_imageurl_from_data(data):
-	matches = re.findall(
+	
+	try:
+		matches = re.findall(
 				r'(<img[^>].*?src\s*=\s*"([^"]+)")', data
 			)
-	if matches:
-		return str(matches[0][1])
-	else:
+		if matches:
+			return str(matches[0][1])
+		else:
+			return None
+	except:
+		print "Error in get_imageurl_from_data"
 		return None
-
 
 
 def strip_image_from_data(data):	
@@ -80,4 +130,37 @@ def truncatewords(Value,limit=30):
 
 	# Join the words and return
 	return ' '.join(words) + '...'
-	
+
+def slugify_name(value):
+	value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+	value = re.sub('[^\w\s-]', '', value).strip().lower()
+	return mark_safe(re.sub('[-\s]+', '_', value))
+
+
+def user_has_group(test_func):
+    """
+    Decorator for views that checks that the user has the group,
+    raising HttpResponseForbidden page if necessary. The test should be a callable
+    that takes the user object and returns True if the user passes.
+    """
+
+    def decorator(view_func):
+        @wraps(view_func, assigned=available_attrs(view_func))
+        def _wrapped_view(request, *args, **kwargs):
+            if test_func(request.user):
+                return view_func(request, *args, **kwargs)
+            return HttpResponseForbidden()
+        return _wrapped_view
+    return decorator
+
+
+def group_required(*group_names):
+    """Requires user membership in at least one of the groups passed in."""
+    def in_groups(u):
+        if u.is_authenticated():
+            if bool(u.groups.filter(name__in=group_names)) | u.is_superuser:
+                return True
+        return False
+    return user_has_group(in_groups)
+
+slugify_name = allow_lazy(slugify_name, six.text_type)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 from blogging.models import BlogParent,BlogContentType,BlogContent
-from blogging.forms import PostForm, ParentForm
+#from blogging.forms import PostForm, ParentForm
 
 from django.conf import settings
 
@@ -19,19 +19,19 @@ mark_published.short_description = "Mark selected content as published"
 
 
 
-class ParentAdmin(MPTTModelAdmin,reversion.VersionAdmin):
+class ParentAdmin(MPTTModelAdmin):
     fieldsets = [
                  ('',     {'fields': ['title', 'parent','slug','data','content_type']} ),
                  ]
     list_display = ('title', 'parent', 'level')
     list_filter = ['parent']
     search_fields = ['title']
-    form = ParentForm
+#     form = ParentForm
     ordering = ['title']
     prepopulated_fields = {'slug': ('title',), }
 
 if 'cms' in settings.INSTALLED_APPS:
-    class ContentAdmin(FrontendEditableAdmin,PlaceholderAdmin,reversion.VersionAdmin):
+    class ContentAdmin(FrontendEditableAdmin,PlaceholderAdmin):
         list_display = ('title', 'create_date', 'published_flag','publication_start')
         list_filter = ['create_date']
         search_fields = ['title']
@@ -45,6 +45,7 @@ if 'cms' in settings.INSTALLED_APPS:
                      ('Other',     {'fields': ['section', 'author_id', 'published_flag', 'special_flag', 'content_type','tags']} )
                      ]
         
+
 
 admin.site.register(BlogParent, ParentAdmin)
 admin.site.register(BlogContentType)

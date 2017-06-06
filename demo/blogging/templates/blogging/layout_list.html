@@ -1,0 +1,16 @@
+{% extends "blogging/base.html" %}
+{% load staticfiles %}
+
+{% block title %}
+Layouts
+{% endblock %}
+
+{% block content %}
+	{% block content_blog %}
+	{% endblock %}
+
+	{% block extra_script %}
+	<script src="{{ STATIC_URL }}/js/index_tree.js"></script> 
+	{% endblock %}
+
+{% endblock %}

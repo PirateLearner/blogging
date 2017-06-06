@@ -1,0 +1,262 @@
+{% extends "blogging/base.html" %}
+
+{% load disqus_tags %}
+{% load bookmark_tags %}
+{% load humanize %}
+
+{% disqus_dev %}
+{% block meta %}
+{% include "meta.html" with meta=meta only %}
+{% endblock %}
+
+
+{% block title %}
+{{ content.title }}
+{% endblock %}
+
+{% block extra_style %}
+    <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}css/annotations/annotations.css">
+    <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}js/syntaxhighlighter/styles/shCore.css">
+    <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}js/syntaxhighlighter/styles/shThemeDefault.css">
+{% endblock %}
+
+{% block edit_content %}
+
+{% endblock %}
+
+{% block content_blog %}
+
+        <div class="mB-120 blog-post-page">
+{% comment %}   {% include 'blogging/section_title.html' with page=page %} {% endcomment %}
+          <article class=" section section--main" role="article">
+            <div class="mdl-grid fixed-width ">
+              <div itemscope itemtype="http://schema.org/Article" class=" section__block mdl-cell mdl-cell--7-col mdl-cell--12-col-tablet ">
+                <!-- main blog content start -->
+                <span class="hidden rest" data-id="{{ nodes.id }}" data-content-type="{{ nodes.get_content_type }}"></span>
+                <h3 itemprop="name" class="blog-post__title">{{ content.title }}</h3>
+                <div class="blog-post__meta row">
+                  <div class="mB16">
+                    <span class="blog-post__author">
+	                    <a href="{{ content.author.profile.get_profile_page }}">
+	                    	<span itemprop="author" itemscope itemtype="http://schema.org/Person">
+	                    		<span itemprop="name">{{ content.author.profile.get_profile_name|title }}</span>
+	                    	</span>
+	                    </a>
+	                </span>
+                	<span itemprop="publisher" itemscope itemtype="http://schema.org/Person">
+                		<meta itemprop="name" content="PirateLearner" />
+                	</span>
+
+	                <meta itemprop="headline" content="{{ content.title }}"/>
+                    <meta itemprop="datePublished" content=" {{ meta.date_time }} "/>
+                    <meta itemprop="dateModified" content=" {{ meta.date_time }} "/>
+                    <meta itemprop="url" content=" {{ request.build_absolute_uri|urlencode }}"/>
+                    <time datetime="2016-06-30" class="blog-post__time"> {{ meta.date_time|naturaltime }} </time>
+                  </div>
+                  <div class="blog-post__share hide-for-print mB16">
+                    <a href="https://plus.google.com/share?url={{ request.build_absolute_uri|urlencode }}" title="Google+" target="_blank" class="share__link analytics-event" >
+                      <i class="fa fa-google"></i>
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" title="Facebook" target="_blank" class="share__link analytics-event" data-analytics-event-category="blog" data-analytics-event-action="share" data-analytics-event-label="facebook">
+                      <i class="fa fa-facebook"></i>
+                    </a>
+                    <a 
+                    href="https://twitter.com/share?url={{ request.build_absolute_uri|urlencode }}&text={{ nodes.get_title }} " title="Twitter" target="_blank" class="share__link analytics-event" data-analytics-event-category="blog" data-analytics-event-action="share" data-analytics-event-label="twitter">
+                      <i class="fa fa-twitter"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri|urlencode }}&title={{ nodes.get_title }}&summary={{ nodes.get_summary }}&source=" title="LinkedIn" target="_blank" class="share__link">
+                      <i class="fa fa-linkedin"></i>
+                    </a>
+                    
+                    <a href="mailto:?subject=Check out this blog from PirateLerner &amp;body=" title="Email" target="_blank" class="share__link">
+                      <i class="fa fa-envelope"></i>
+                    </a>
+                    {% comment %}  
+                    <a title="Print" target="_blank" class="share__link" href="javascript:window.print();">
+                      <i class="fa fa-print"></i>
+                    </a>
+                    {% endcomment %}
+                  </div>
+                </div>
+                <div class="blog-post__meta">
+                    <div class="article-actions__button text-muted vote" id="upvote">
+                        <span class="material-icons">thumb_up</span>
+                        <span class="icon-helper" id="upvote_count">
+                            0
+                        </span>
+                    </div>
+                    <div class="article-actions__button text-muted vote" id="downvote">
+                        <span class="material-icons">thumb_down</span>
+                        <span class="icon-helper" id="downvote_count">0                 
+                        </span>
+                    </div>
+                    <div class="articles_action__error voting-error hidden" id="article-actions_error">
+                        <span class="pull-left material-icons" id="article-actions-close">close</span>
+                        <span id="article-actions_text"></span>
+                    </div>
+                </div>
+                <div class="blog-post__subjects hide-for-print">
+                </div>
+                <div class="blog-post__body markdown" id="commentable-container"  itemprop="articleBody">
+				{% block custom_detail %}
+				
+				{% endblock %}
+				
+                </div>
+                <!-- main blog content end -->
+                <div class="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
+                  <div class="mdl-tabs__tab-bar">
+                      <a href="#discuss-panel" class="mdl-tabs__tab is-active">Discussions</a>
+                      <a href="#article-adjunct-tab-notes" class="mdl-tabs__tab">Notes</a>
+                  </div>
+                
+                  <div class="mdl-tabs__panel is-active" id="discuss-panel">
+                  {% disqus_show_comments %}
+                  </div>
+                  <div class="mdl-tabs__panel article-adjunct-tab active comments-container" id="article-adjunct-tab-notes">
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </article>
+{% if request.user.is_staff == True or can_edit %}
+    {% include "common/button-floating-edit.html" with url=content.edit %}
+{% endif %}
+          
+        </div> <!-- Blog post end -->
+
+
+{% comment %}  
+<div class="container-fluid" >
+	<div class="row">
+		<div class="content-tree col-md-2 pT-80 ">
+			{% include 'blogging/index_tree.html' with parent=parent %}
+		</div>
+		
+		<div class="col-sm-12 col-md-10 col-lg-7 pT-50">
+
+			<section class="header-ribbon" id="overlay-target" itemscope itemtype="http://schema.org/Article">
+			
+				<!--<div> -->
+					<span class="hidden rest" data-id="{{ nodes.id }}" data-content-type="{{ nodes.get_content_type }}"></span>
+					<h1 class="article-title" itemprop="headline"> 	{{ content.title }} </h1>
+					<meta itemprop="datePublished" content=" {{ meta.date_time }} "/>
+					<span class="article-author"> by <a href="{{ content.author.profile.get_profile_page }}">{{ content.author.profile.get_name|title }}</a></span>       	
+					<div class="article-actions_outer" data-spy="affix">
+						<div class="article-actions-title-small">
+							<h4 class="article-title"> 	{{ content.title  }} </h4>
+						</div>       	
+						<div class="article-actions">
+							{% if request.user.is_staff == True %}
+							<div class="article-actions__button pull-right">
+			   					<a id="trigger-edit" href="{{ content.edit }}" type="button">
+			   						<span class="glyphicon glyphicon-edit"></span>
+			   						<span class="icon-helper">
+					       			Edit
+					       			</span>
+			   					</a>
+				       		</div>
+				       		{% else %}
+				       			{% if can_edit %}
+									<div class="article-actions__button pull-right">
+					   					<a id="trigger-edit" href="{{ content.edit }}" type="button">
+					   						<span class="glyphicon glyphicon-edit"></span>
+					   						<span class="icon-helper">
+							       			Edit
+							       			</span>
+					   					</a>
+						       		</div>		       			
+				       			{% endif %}
+							{% endif %}
+							{% if content.published %}
+								<div class="article-actions__button pull-right mR-16 pT-6">
+									<a href="https://twitter.com/share" class="twitter-share-button"><i class="fa fa-twitter"></i> Tweet</a>
+								</div>
+								
+								<div class="article-actions__button pull-right mR-16 pT-2">					
+								    <div class="fb-share-button" 
+								        data-href="{{ request.path|safe }}" 
+								        data-layout="button_count">
+								    </div>
+								</div>
+								<div class="article-actions__button pull-right mR-16 pT-6">
+									<div class="g-plus" data-action="share" data-href="{{ request.path|safe }}" data-align="right" data-annotation="bubble" ></div>
+								</div>					
+							{% endif %}
+				       		<div class="article-actions__button text-muted vote" id="upvote">
+					       		<span class="glyphicon glyphicon-chevron-up"></span>
+					       		<span class="icon-helper" id="upvote_count">
+					       			0
+					       		</span>
+				       		</div>
+				       		<div class="article-actions__button text-muted vote" id="downvote">
+					       		<span class="glyphicon glyphicon-chevron-down"></span>
+					       		<span class="icon-helper" id="downvote_count">0	       			
+					       		</span>
+				       		</div>
+				       		<div class="articles_action__error voting-error hidden" id="article-actions_error">
+				       			<span class="pull-left glyphicon glyphicon-remove" id="article-actions-close"></span>
+				       			<span id="article-actions_text"></span>
+				       		</div>
+				       	</div>			
+			       	</div>
+      			
+					<article class="article-body" id="commentable-container"  itemprop="articleBody">
+						{% block custom_detail %}
+						{% endblock %}
+					</article>
+					
+				<!-- </div> -->
+			</section>
+			<div class="article-adjunct">
+			    <nav class="article-adjunct-nav">
+			        <ul class="article-adjunct-nav--list">
+			            <li class="nav-tab article-adjunct-nav--item active"><a href="#article-adjunct-tab-discuss"><span>Discussions</span></a></li>
+			            <li class="nav-tab article-adjunct-nav--item"><a href="#article-adjunct-tab-notes"><span>Notes</span></a></li>
+			        </ul>
+			    </nav>
+			    <div class="article-adjunct-block">
+			        <div class="article-adjunct-tab" id="article-adjunct-tab-discuss">
+						{% disqus_show_comments %}
+			        </div>
+			        <div class="article-adjunct-tab active comments-container" id="article-adjunct-tab-notes">
+			            
+			        </div>
+			    </div>
+			</div> <!-- div article-adjunct -->
+	
+		</div> <!-- div second column end -->
+	</div> <!-- div row -->
+	<div class="overlay" id="img-modal"></div>
+</div> <!-- div container fluid -->
+{% endcomment %}
+{% endblock %}
+
+{% block extra_script %}
+<script src="{{ STATIC_URL }}js/getuser.js"></script> 
+<script src="{{ STATIC_URL }}js/voting/voting_detail.js"></script>
+<script src="{{ STATIC_URL }}js/annotations/script.js"></script>
+<script src="{{ STATIC_URL }}js/blogging/nav_affix.js"></script>    
+
+<script src="{{ STATIC_URL }}ckeditor/ckeditor/ckeditor.js"></script>
+<script src="{{ STATIC_URL }}js/getuser.js"></script>
+<script src="{{ STATIC_URL }}js/bookmark/bookmark_details.js"></script>
+<script src="{{ STATIC_URL }}js/blogging/image_expand.js"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}css/overlay.css"></link>
+	<!-- Twitter share script -->
+	<script>
+		!function(d,s,id){
+		var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';
+		if(!d.getElementById(id)){js=d.createElement(s);
+		js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');
+	</script>
+
+<!-- Syntax Highlight -->
+    <script type="text/javascript">
+         SyntaxHighlighter.all()
+    </script>
+
+{% endblock %}
+

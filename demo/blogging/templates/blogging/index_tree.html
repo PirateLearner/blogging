@@ -1,0 +1,15 @@
+{% comment %}  
+
+This file will render Indext tree will ul and li tags with the help of Ajax. index_tree.css and index_tree.js should be added beforehand.
+It should be placed under suitable columns by calling party. (preferably 2 columns in Medium screen)
+
+{% endcomment %}
+
+<div class="filters__title" data-container="subjects-container">Subjects</div>
+<div class="filters__container">
+<ul id="indextree" class="" {% if parent %} data-parent= {{ parent.id }}{% endif %}>
+
+</ul>
+                
+</div>
+

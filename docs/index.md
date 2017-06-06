@@ -39,10 +39,10 @@ after installation, add blogging to your installed apps and also make sure that 
 	INSTALLED_APPS = (
 	...
 	'reversion',
-	'crispy_forms',
 	'blogging',
 	'taggit',
 	'ckeditor',
+	'ckeditor_uploader'
 	'django_select2',
 	...
 	)
@@ -55,7 +55,7 @@ Also add blogging urls in your projects urls.py -
 	...
 	)
 
-after this just run ` python manage.py syncdb ` for creation of database tables.
+after this just run ` python manage.py migrate blogging` for creation of database tables.
 
 ## Usage
 

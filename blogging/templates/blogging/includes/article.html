@@ -1,0 +1,8 @@
+{% extends "blogging/test_detail.html" %}
+
+			{% block custom_detail %}
+			
+			{% autoescape off %}
+				{{ content.Body }}
+			{% endautoescape %}
+			{% endblock %}

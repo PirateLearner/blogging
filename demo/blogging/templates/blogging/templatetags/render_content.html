@@ -1,0 +1,17 @@
+{% if attribute_name %}
+
+{{ attribute }}
+
+{% else %}
+		<h1 class="article-title"> 	{{ title }} </h1>
+		<span class="article-author"> by <a href="{{ author.get_absolute_url }}">{{ author.username|capfirst }}</a> </span>       	
+		
+		<div id="commentable-container">
+		{% for field in attribute_list %}
+			{% autoescape off %}
+				{{ field.value }}
+			{% endautoescape %}		
+		{% endfor %}
+		</div>
+
+{% endif %}

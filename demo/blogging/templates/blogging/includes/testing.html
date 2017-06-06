@@ -1,0 +1,68 @@
+{% load voting_tags %}
+
+<div class="row">
+{% for node in nodes %}
+	<div class="col-md-6 col-lg-6">
+	<!-- Actual card implementation -->
+		<div class="mdl-card mW-512px bS-1 wFull">
+		{% with img_url=node.get_image_url %}
+			<div class="card-row">
+			{% if img_url %}
+				<div class="mdl-card__media" style="background: url('{{ STATIC_URL }}images/opensource.svg') center / cover;">
+					<a class="media-link" href="{{ node.get_absolute_url }}" title="">
+					</a>
+				</div>
+			{% endif %}
+				<div class="column wFull">
+					<div class="section-txt">
+					{% if not parent %}
+						<a title="View more in {{ node.get_parent.title }}" href="{{ node.get_parent.get_absolute_url }}">
+								{{ node.get_parent.title }}		    			
+						</a>
+					{% endif %}			
+					</div>					
+					<div class="mdl-card__title bg-event">					
+						<div class="title-text highlight">		
+							<a href="{{ node.get_absolute_url }}" title="">
+								{{ node.title }}
+							</a>																						
+						</div>
+						<div class="extras highlight">
+						</div>	
+					</div>
+					<div class="card-panel card-row mdl-card__actions">
+						<div class="light-txt">		
+						{% for tag in node.get_tags %}
+					 		<a class="hashtag pretty-link" href="{{ tag.url }}">
+					 			<s>#</s>
+								<b>{{ tag.name }}</b>
+							</a>
+						{% endfor %}	
+						</div>	
+											
+						<div class="mdl-layout-spacer"></div>
+						<div class="light-txt">
+			       		{% score_for_object node as score %}
+				            <span>Score:</span>
+				            <span>{{ score.score }}</span>	
+						</div>
+					</div>
+				</div>				
+			</div>
+			{% comment %}
+			<div class="card-panel card-row mdl-card__actions border-top">
+				<div class="light-txt">
+				</div>			
+				<div class="mdl-layout-spacer"></div>
+				<div class="light-txt">
+				</div>
+			</div>
+			{% endcomment %}
+		{% endwith %}
+		</div>
+	<!-- Card end -->
+	</div>
+{% endfor %}
+</div>
+
+

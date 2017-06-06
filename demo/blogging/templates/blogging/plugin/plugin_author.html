@@ -1,0 +1,38 @@
+{% load mptt_tags %}
+        {% recursetree nodes %}
+            <li>
+                {{ node.name }}
+                {% if not node.is_leaf_node %}
+                    <ul class="children">
+                        {{ children }}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endrecursetree %}
+
+
+<!--
+        <div class="tile-big">
+
+        {% recursetree nodes %}
+                <div class="tile-date top-right">
+                        <span class="date">{{ child.Date}}</span>
+                </div>
+                <h3 class="tile-title">{{child.title}}</h3>
+                <div class="tile-image-container">
+                        <a href="#">
+		<img src="{{STATIC_URL}}images/gallery_image-1.png" class="tile-image" alt="Some image must have been here">
+		</a>
+                </div>
+                <p class="tile-summary"> {{child.summary}} </p>
+                <div class="tile-author bottom-left">
+                        <span class="author"> {{child.author}} </span>
+                </div>
+                <div class="tile-category bottom-right">
+                        <span class="category">Blog</span>
+                </div>  
+        {% endrecursetree %}
+        </div>
+-->
+
+

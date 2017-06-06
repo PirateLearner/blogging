@@ -5,139 +5,114 @@ class CreateClass():
     """
     
     def __init__(self, name, member_dict,is_leaf):
-        self.import_string = 'from blogging import tag_lib\nfrom django.db import models\nfrom blogging.models import *\nfrom django import forms\n' + \
-        'from blogging.forms import *\nfrom ckeditor.widgets import CKEditorWidget\n' + \
-        'from taggit.forms import * \nfrom django.db.models import Q \nfrom mptt.forms import TreeNodeChoiceField \n' 
+        self.import_string = 'from blogging import tag_lib\nfrom blogging.models import *\nfrom django import forms\n' + \
+        'from blogging.forms import *\nfrom ckeditor.widgets import CKEditorWidget\nimport json\n' + \
+        'from django.db.models import Q \nfrom mptt.forms import TreeNodeChoiceField\n' 
         self.file_start = '"""\nThis is auto generated script file.\nIt defined the wrapper class for specified content type.\n"""\n'
-        self.class_start_prifix = 'class '
-        self.class_name = ""
-        self.class_start_suffix = '(models.Model):\n'
-        # it will be used for writing class defination
-        self.class_string = ""
-        # following will write the class member
-        self.class_member = '\t'
-        self.class_member_name = ''
-        self.class_member_type = ''
-        self.class_member_options = ''
-        self.class_member_tag_list = "\ttag_list = [ "
-        self.class_member_string_list = [ ]
-        self.class_strfunction_string = '\tdef __str__(self):\n'
-#         self.class_initfunction_string = ''
-#         self.class_initfunctionprot_string = '\tdef __init__(self):\n'
-#         self.class_initfunctiondef_string = ''
-        self.class_templatefuntion_string = '\tdef render_to_template(self,db_object):\n'
-        self.class_dbfuntion_string = '\tdef render_to_db(self,db_object):\n'
-        self.class_formclass_string = 'class '
-        self.class_formclass_meta_string = '\tclass Meta:\n' +'\t\tmodel = ' 
-        self.class_formclass_save_string = '\tdef save(self):\n' + '\t\tinstance = '  
-        member_dict.update({'title':'CharField'})
-        if is_leaf == True:
-            member_dict.update({'pid_count':'IntegerField'})
-        self.class_name = name
-        self.class_formclass_meta_string +=  self.class_name + '\n'
-        self.class_formclass_save_string +=  self.class_name + '()\n'
-        self.class_formclass_string += self.class_name + 'Form(forms.ModelForm):\n'
-        self.class_string = self.class_start_prifix + str(self.class_name).capitalize() + self.class_start_suffix
-    
-        self.class_strfunction_string += '\t\treturn "' + self.class_name + '"\n\n'
-        
-        self.class_templatefuntion_string += '\t\tfor tag_name in self.tag_list:\n'
-        self.class_templatefuntion_string += '\t\t\tcurrent_field = tag_lib.get_field_name_from_tag(str(tag_name[\'name\']))\n'
-        self.class_templatefuntion_string += '\t\t\tresult_field = tag_lib.parse_content(db_object,tag_name)\n'
-        
-        self.class_dbfuntion_string += '\t\ttemp_data = ""\n'
-        self.class_dbfuntion_string += '\t\tfor tag_name in self.tag_list:\n'
-        self.class_dbfuntion_string += '\t\t\tcurrent_field = tag_lib.get_field_name_from_tag(str(tag_name[\'name\']))\n'
-        self.class_dbfuntion_string += '\t\t\ttag_start = "%% " + str(tag_name["name"]) + " %% " \n'
-        self.class_dbfuntion_string += '\t\t\ttag_end = "%% endtag " + str(tag_name["name"]) + " %%"\n'
-        
-        for member_name, member_type in member_dict.iteritems():
-            
-            if is_leaf == True and str(member_name) == 'content_list' :
-                continue
-            else:
-                self.class_member_name = member_name + ' = '
-                if member_type == 'CharField':
-                    self.class_member_type = 'models.' + member_type+ '(max_length=100)\n'
-                else:
-                    self.class_member_type = 'models.' + member_type+ '()\n'
-                member_string = self.class_member + self.class_member_name + self.class_member_type
-                self.class_member_string_list.append(member_string)
-                
-                current_tag = " { 'name':'" + member_name + "_tag" + "' , 'type' :'" + member_type + "'} ,"
-                self.class_member_tag_list += current_tag
-                
-                self.class_templatefuntion_string += "\t\t\tif current_field == '" + str(member_name) + "' : \n"
-                if str(member_name) == "pid_count":
-                    self.class_templatefuntion_string += "\t\t\t\tself." + str(member_name) + " = int(result_field) \n\n"
-                else:
-                    self.class_templatefuntion_string += "\t\t\t\tself." + str(member_name) + " = result_field \n\n" 
-                
-                
-                if str(member_name) == 'title':
-                    self.class_dbfuntion_string += "\t\t\tif current_field == '" + str(member_name) + "' : \n"
-                    self.class_dbfuntion_string += "\t\t\t\ttagged_field = tag_start + self."+str(member_name) + " + tag_end \n"
-                    self.class_dbfuntion_string += "\t\t\t\tdb_object.title = self.title \n\n"
-                elif str(member_name) != 'pid_count' and is_leaf == True:
-                    self.class_dbfuntion_string += "\t\t\tif current_field == '" + str(member_name) + "' : \n"
-                    self.class_dbfuntion_string += "\t\t\t\ttemp_dict = tag_lib.insert_tag_id(self."+str(member_name) + ", self.pid_count)\n"
-                    self.class_dbfuntion_string += "\t\t\t\tself."+str(member_name) +" = str(temp_dict['content'])\n"
-                    self.class_dbfuntion_string += "\t\t\t\tself.pid_count = int(temp_dict['pid_count'])\n"
-                    self.class_dbfuntion_string += "\t\t\t\ttagged_field = tag_start + self."+str(member_name) + " + tag_end \n"
-                    self.class_dbfuntion_string += "\t\t\t\ttemp_data += tagged_field \n\n"
-                elif str(member_name) != 'pid_count':
-                    self.class_dbfuntion_string += "\t\t\tif current_field == '" + str(member_name) + "' : \n"
-                    self.class_dbfuntion_string += "\t\t\t\ttagged_field = tag_start + self."+str(member_name) + " + tag_end \n"
-                    self.class_dbfuntion_string += "\t\t\t\ttemp_data += tagged_field \n\n"
-                    
-                
-                # in case of PID_COUNT do not save any information in form
-                if str(member_name) == 'pid_count':
-                    continue
-                ## Creating form fields in FormClass
-                self.class_formclass_save_string += '\t\tinstance.' + str(member_name) + ' = self.cleaned_data["' + str(member_name) + '"]\n'
-                
-                if str(member_name) != 'content_list' and str(member_name) != 'title':
-                    if str(member_type) == 'TextField':
-                        self.class_formclass_string += '\t' + self.class_member_name + ' forms.CharField(widget = CKEditorWidget())\n'
-                    if str(member_type) == 'CharField':
-                        self.class_formclass_string += '\t' + self.class_member_name + ' forms.CharField()\n'
+        self.class_name = 'class ' + str(name).capitalize() +'Form(forms.Form):\n'
 
+        # List to store the member of the Class
+        self.class_member_string_list = [ ]
+        # add the title, section and tag fields
+        self.class_member_string_list.append('\ttitle = forms.CharField(max_length = 100)\n')
+        self.class_member_string_list.append('\tpid_count = forms.IntegerField(required=False)\n')
         if is_leaf == True:
-            self.class_dbfuntion_string += "\t\ttagged_field = ' %% pid_count_tag %% ' + str(self.pid_count) + '%% endtag pid_count_tag %%'\n"
-            self.class_dbfuntion_string += "\t\ttemp_data += tagged_field\n"
-        self.class_dbfuntion_string += "\t\tdb_object.data = temp_data\n\n"
-        
-        self.class_member_tag_list += "]\n\n"
-        self.class_formclass_save_string += '\t\treturn instance\n'
-        if is_leaf == True:
-            self.class_formclass_string += '\tsection = forms.ModelChoiceField(\n' + \
-                                    'queryset=BlogParent.objects.all().filter(~Q(title="Orphan"),~Q(title="Blog"),children=None,),\n' + \
-                                    'empty_label=None,\n' + \
-                                    'required = True,\n' + \
-                                    'label = "Select Parent")\n'
-            self.class_formclass_meta_string += "\t\texclude=('pid_count',)\n"
-            self.class_formclass_string += '\ttags = TagField(help_text= "comma seperated fields for tags")\n'
-            #self.class_formclass_string += '\t\twidgets = {"tags": PostTagWidget,"data": CKEditorWidget}\n'
+            self.class_member_string_list.append('\tsection = TreeNodeChoiceField(queryset=BlogParent.objects.all().filter(~Q(title="Orphan"),Q(children=None)),required=True,empty_label=None, label = "Select Section" )\n')
+            
         else:
-            self.class_formclass_string += '\tparent = TreeNodeChoiceField(queryset=BlogParent.objects.all().filter(~Q(title="Orphan"),~Q(title="Blog")),required=False,' + \
-                                            'empty_label=None, label = "Select Parent" )\n'
+            self.class_member_string_list.append('\tparent = TreeNodeChoiceField(queryset=BlogParent.objects.all().filter(~Q(title="Orphan"),~Q(title="Blog")),required=True,empty_label=None, label = "Select Parent" )\n')
+        
+        # string for init function
+        self.class_initfunction_string = '\tdef __init__(self,action, *args, **kwargs):\n'
+        self.class_initfunction_string += '\t\tinstance = kwargs.pop("instance", None)\n\t\tif instance:\n'
+        self.class_initfunction_string += '\t\t\tjson_data = json.loads(instance.data)\n'
+        self.class_initfunction_string += '\t\t\tkwargs.update(initial={\n'
+        self.class_initfunction_string += '\t\t\t\t"title": instance.title,\n'
+        self.class_initfunction_string += '\t\t\t\t"pid_count": json_data["pid_count"],\n'
+        if is_leaf == True:
+            self.class_initfunction_string += '\t\t\t\t"section": instance.section,\n'
+            self.class_initfunction_string += '\t\t\t\t"tags": instance.tags.all(),\n'
+        else:
+            self.class_initfunction_string += '\t\t\t\t"parent": instance.parent,\n'
+
+
+        #string for save function
+        self.class_formclass_save_string = '\tdef save(self,post,commit=False):\n' + '\t\tpost.pop("csrfmiddlewaretoken")\n\t\tpost.pop("submit")\n' 
+        self.class_formclass_save_string += '\t\tpost.pop("title")\n' 
+        if is_leaf == True:
+            self.class_formclass_save_string += '\t\tpost.pop("section")\n'
+            self.class_formclass_save_string += '\t\tpost.pop("tags")\n'
+        else:
+            self.class_formclass_save_string += '\t\tpost.pop("parent")\n'
+        
+        # commit False case
+        self.class_formclass_save_string += '\t\tif commit == False:\n'
+        self.class_formclass_save_string += '\t\t\tfor k,v in post.iteritems():\n\t\t\t\tif str(k) == "pid_count" :\n\t\t\t\t\tpost["pid_count"] = self.cleaned_data["pid_count"]\n'
+        self.class_formclass_save_string += '\t\t\t\telse:\n\t\t\t\t\tpost[k] = str(v.encode("utf-8"))\n'
+        self.class_formclass_save_string += '\t\t\treturn json.dumps(post.dict())\n'
+        
+        # commit True Test
+        self.class_formclass_save_string += '\t\tfor k,v in post.iteritems():\n\t\t\tif str(k) != "pid_count" :\n\t\t\t\ttmp = {}\n'
+        self.class_formclass_save_string += '\t\t\t\ttmp = tag_lib.insert_tag_id(str(v.encode("utf-8")), self.cleaned_data["pid_count"])\n'
+        self.class_formclass_save_string += '\t\t\t\tpost[k] = tmp["content"]\n'
+        self.class_formclass_save_string += '\t\t\t\tpost["pid_count"] = tmp["pid_count"]\n'
+        self.class_formclass_save_string += '\t\treturn json.dumps(post.dict())\n'
+        
+        
+       
+        for member_name, member_type in member_dict.iteritems():
+                 
+            ## Creating form fields in FormClass
+            if str(member_type) == 'TextField':
+                class_member = '\t' + member_name + ' = forms.CharField(widget = CKEditorWidget(config_name="author"), required=False)\n'
+            if str(member_type) == 'CharField':
+                class_member = '\t' + member_name + ' = forms.CharField(max_length=100, required=False)\n'
+            self.class_member_string_list.append(class_member)
+
+            self.class_initfunction_string += '\t\t\t\t"' + member_name + '":json_data["'+ member_name + '"],\n'
+
+        self.class_initfunction_string += '\t\t\t\t})\n'
+        if is_leaf == True:
+            self.class_member_string_list.append('\ttags = Select2ChoiceField(queryset=Tag.objects.filter())\n')
+
+        self.class_initfunction_string += '\t\tsuper(' + str(name).capitalize() +'Form' + ', self).__init__(*args, **kwargs)\n\n\n\n'
 
 
     
     def form_string(self):
         
-        final_string =  self.import_string + self.file_start + self.class_string
+        final_string =  self.import_string + self.file_start + self.class_name
         for member in self.class_member_string_list:
             #print final_string
             final_string += member
 
-        final_string += self.class_member_tag_list 
-        final_string += self.class_strfunction_string + self.class_templatefuntion_string + self.class_dbfuntion_string + self.class_formclass_string \
-                        + self.class_formclass_meta_string + self.class_formclass_save_string
+        final_string += self.class_initfunction_string + self.class_formclass_save_string
         
         return final_string
     
+
+class CreateTemplate():
+    """
+    This class will auto generate the template to be used for Detail page of that content type object
+    """
+    def __init__(self, name, member_dict,is_leaf):
+        self.start_string = '{% extends "blogging/test_detail.html" %}\n'
+        self.start_string += '\t{% block custom_detail %}\n'
+        self.start_string += '\t\t{% autoescape off %}\n'
+        self.member_list = []
+        self.end_string = '\t\t{% endautoescape %}\n\t{% endblock %}\n'
+        for member_name, member_type in member_dict.iteritems():
+            member_string = '\n\t\t\t{{ content.' + member_name + ' }}\n'
+            self.member_list.append(member_string)
+    
+    def form_string(self):
+        final_string = self.start_string 
+        for member in self.member_list:
+            final_string += member
+        final_string += self.end_string
+        return final_string 
+          
+
 
 def test_fun():
     name = 'basecontent'
