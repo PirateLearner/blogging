@@ -146,7 +146,7 @@ class LatestEntriesForm(forms.ModelForm):
 # 		widgets = {'tags': PostTagWidget, }
 # 		model = Content
 
-class ParentForm(forms.ModelForm):
+class SectionForm(forms.ModelForm):
 
 	data = forms.CharField(label="Data Field", widget=CKEditorWidget(), help_text=('Please Upload at least one picture for preview!!!'))
 	class Meta:
@@ -167,10 +167,10 @@ class LayoutListForm(forms.Form):
 
 class LayoutForm(forms.ModelForm):
 	def __init__(self, *args, **kwargs):
-		super(ContentTypeCreationForm, self).__init__(*args, **kwargs)
+		super(LayoutForm, self).__init__(*args, **kwargs)
 	class Meta:
 		model = Layout
-		fields = ['content_type',]
+		fields = ['content_type','layout_for']
 
 
 class ContentTypeForm(forms.Form):

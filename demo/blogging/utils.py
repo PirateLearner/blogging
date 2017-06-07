@@ -45,7 +45,7 @@ def get_css_styles():
 		return css_styles['bootstrap4']
 	
 	
-def create_content_type(name,form_dict):
+def create_content_type(name,form_dict,is_leaf):
 	"""
 	This function will create the following for the new content layout:
 	pseudo-model

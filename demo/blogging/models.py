@@ -99,6 +99,16 @@ class Layout(BaseContentClass):
     specify hierarchical information like whether this instance can be a
     parent to another one in the same table.
     
+    But, it must specify whether the schema being created is for a section
+    entry or a content entry. This is because of the nature the forms are
+    generated. 
+    There are differences in how a section model and a content model look 
+    like. So, while creating the class for each, one has to take care of 
+    such differences. Since our method is of creating a form class statically,
+    it would inherit from the base classes of model forms for Section and 
+    Content respectively. Thus, in order to know which class to inherit, it
+    needs to know what are we creating a layout for.
+    
     Additionally, the schema field contains the JSON pickled dictionary of 
     fields that the user has configured in the main layout,
     apart from the title field.
@@ -107,12 +117,21 @@ class Layout(BaseContentClass):
     handled appropriately at the form submission level. Model does not 
     verify file-system resources.
     '''
+    CONTENT_TABLE = 'CT'
+    SECTION_TABLE = 'ST'
+    TABLE_TYPES = (
+                   (CONTENT_TABLE, 'Content Creation'),
+                   (SECTION_TABLE, 'Section Information'),
+                   )
     content_type            = models.CharField(max_length=100, 
                                                unique=True)
     model_name              = models.CharField(max_length=100, 
                                                blank=True,
                                                null=True)
     #The save function guarantees that it won't be empty
+    layout_for              = models.CharField(choices = TABLE_TYPES,
+                                               max_length = 2,
+                                               default = CONTENT_TABLE)
     schema                  = models.TextField(blank=True)
     
     def __unicode__(self):
@@ -249,7 +268,7 @@ class Content(BaseContentClass):
     title               = models.CharField(max_length = 100)
     create_date         = models.DateTimeField('Date Created', 
                                                auto_now_add=True)
-    author_id           = models.ForeignKey(auth.models.User, 
+    author              = models.ForeignKey(auth.models.User, 
                                             related_name="content",
                                             on_delete = models.CASCADE)
     data                = models.TextField(null= False)

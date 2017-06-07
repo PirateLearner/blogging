@@ -52,8 +52,12 @@ class LayoutListView(View):
                 for form in form2:
                     form_dict[form.cleaned_data['field_name']] = form.cleaned_data['field_type']
                 #Go ahead and create the file artifacts that are needed for this Layout
+                is_leaf = False
+                if form1.cleaned_data['layout_for'] == LayoutForm.CONTENT_TABLE:
+                    is_leaf=True
                 if (create_content_type(slugify_name(form1.cleaned_data['content_type']),
-                                        form_dict) == False ):
+                                        form_dict,
+                                        form1.cleaned_data['layout_for']) == False ):
                     raise forms.ValidationError("Some invalid parameter got passed.")
                 
                 layout_obj = form1.save() 
