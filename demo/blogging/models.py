@@ -3,6 +3,8 @@
 """
 from django.db import models
 from django.contrib.auth.models import User
+
+from django.core.exceptions import ValidationError
 # Create your models here.
 class Content(models.Model):
     """
@@ -17,3 +19,13 @@ class Content(models.Model):
     
     # @todo 
     last_modified = models.DateTimeField("Last modified", auto_now = True)
+    
+    def save(self, *args, **kwargs):
+        if len(self.title) == 0:
+            if len(self.data)==0:
+                raise ValidationError("Both title and data fields cannot be empty")
+            else:
+                title = self.data.split(' ')
+                self.title = ' '.join(title[0: 9 if len(title)>10 else len(title)])
+        
+        super(Content, self).save(*args, **kwargs)
