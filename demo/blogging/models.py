@@ -29,3 +29,6 @@ class Content(models.Model):
                 self.title = ' '.join(title[0: 9 if len(title)>10 else len(title)])
         
         super(Content, self).save(*args, **kwargs)
+    
+    def __str__(self):
+        return self.title
