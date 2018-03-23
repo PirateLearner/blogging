@@ -10,5 +10,5 @@ from rest_framework import serializers
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Content
-        fields = ('url', 'title', 'data', 'author', 
+        fields = ('url', 'id', 'title', 'data', 'author', 
                   'create_date', 'last_modified')

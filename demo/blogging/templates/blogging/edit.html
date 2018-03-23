@@ -1,0 +1,18 @@
+<h3>Create Post</h3>
+<div>
+  {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+  <form action="." method="post">
+    {% csrf_token %}
+      {% for field in entry %}
+      <div>
+        {{ field.label_tag }}{{ field }}
+      </div>
+      {% endfor %}
+      {% for field in entry.hidden_fields %}
+        {{ field.label_tag }}{{ field }}
+      {% endfor %}
+    <input type="submit" value="Save" name="Save"/>
+    <input type="submit" value="Publish" name="Publish"/>
+  </form>
+</div>
