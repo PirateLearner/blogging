@@ -1,0 +1,11 @@
+{% if entries %}
+  <ul>
+    {% for entry in entries %}
+      <li>
+          <a href="{% url 'blogging:detail' entry.id %}">{{ entry.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+<h3>No posts have been created yet. Start writing!</h3>
+{% endif %}

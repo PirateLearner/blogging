@@ -2,7 +2,13 @@
   <ul>
     {% for entry in entries %}
       <li>
-          <a href="{% url 'blogging:detail' entry.id %}">{{ entry.title }}</a>
+          <div>
+            <h3>
+              <a href="{% url 'blogging:detail' entry.id %}">
+                {{ entry.title }}
+              </a>
+            </h3>
+            <p>{{ entry.data }}</p>
       </li>
     {% endfor %}
   </ul>

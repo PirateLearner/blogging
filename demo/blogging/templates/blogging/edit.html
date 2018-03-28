@@ -6,6 +6,7 @@
     {% csrf_token %}
       {% for field in entry %}
       <div>
+        {{ field.errors }}
         {{ field.label_tag }}{{ field }}
       </div>
       {% endfor %}
@@ -14,5 +15,6 @@
       {% endfor %}
     <input type="submit" value="Save" name="Save"/>
     <input type="submit" value="Publish" name="Publish"/>
+    <input type="submit" value="Delete" name="Delete"/>
   </form>
 </div>
