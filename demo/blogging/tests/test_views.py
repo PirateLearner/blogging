@@ -253,7 +253,7 @@ class EditView(BaseTest):
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
-        response = self.client.get('/blogging/edit/{blog}/'.format(blog=obj.id))
+        response = self.client.get('/blogging/{blog}/edit/'.format(blog=obj.id))
         self.assertContains(response, 
                             text="Post Edit 1", 
                             count=1, 
@@ -270,7 +270,7 @@ class EditView(BaseTest):
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
-        response = self.client.post('/blogging/edit/{blog}/'.format(blog=obj.id),
+        response = self.client.post('/blogging/{blog}/edit/'.format(blog=obj.id),
                                     data={'title':"Altered title",
                                           'data': 'Altered data',
                                           'Save': 'Save'},
@@ -297,7 +297,7 @@ class EditView(BaseTest):
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
-        response = self.client.post('/blogging/edit/1/', 
+        response = self.client.post('/blogging/1/edit/', 
                                     data={'Delete':'Delete'})
         self.assertRedirects(response, 
                              expected_url='/blogging/', 

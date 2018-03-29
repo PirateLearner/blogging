@@ -13,7 +13,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('manage/', views.manage, name='manage'),
     path('<int:blog_id>/', views.detail, name='detail'),
-    re_path(r'^edit/(?:(?P<blog_id>\d+)/)?$', 
+    re_path(r'^(?:(?P<blog_id>\d+)/)?edit/$', 
             views.EditView.as_view(), 
             name="edit"),
     ]

@@ -8,7 +8,8 @@ from rest_framework import routers
 from blogging.rest import views
 
 router = routers.SimpleRouter()
-router.register(r'content', views.ContentView)
+router.register(r'content', views.ContentView, base_name='content')
+
 
 urlpatterns = [
     path(r'', 
