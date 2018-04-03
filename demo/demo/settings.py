@@ -128,3 +128,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
 }
+
+BLOGGING = {
+        'USE_POLICY': True,
+    }

@@ -220,3 +220,36 @@ class ContentModel(BaseTest):
         self.assertEqual(db.title, 
                          "We are .", 
                          "Title is not as expected")
+        
+class PolicyModel(BaseTest):
+    def _create_post(self, title, data):
+        return models.Content.objects.create(title=title, 
+                                             data=data, 
+                                             author=self.user)
+        
+    def test_policy_create(self):
+        obj = self._create_post(title='Post 1', data='Some data')
+        policy_obj = models.Policy(entry=obj, policy = models.Policy.PUBLISH)
+        policy_obj.save()
+        
+        fetch_obj = models.Policy.objects.get(id=obj.id)
+        self.assertEqual(policy_obj, fetch_obj, "Objects are not the same")
+        
+    def test_policy_with_publish_date(self):
+        from django.utils import timezone
+        obj = []
+        obj.append(self._create_post(title='Post 1', data='Some data'))
+        
+        for entry in obj:
+            policy_obj = models.Policy(entry=entry, 
+                                       policy = models.Policy.PUBLISH,
+                                       start=timezone.now())
+            policy_obj.save()
+
+        qs = models.Content.objects.get_published()
+        returned_objs = []
+        for entry in qs:
+            returned_objs.append(entry)
+        
+        for entry in obj:
+            self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))

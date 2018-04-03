@@ -5,7 +5,10 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from django.core.exceptions import ValidationError
-# Create your models here.
+from blogging.settings import blog_settings
+
+from blogging import managers
+
 class Content(models.Model):
     """
     Model for a raw blog database entry.
@@ -17,8 +20,17 @@ class Content(models.Model):
     data = models.TextField()
     create_date = models.DateTimeField(auto_now_add = True)
     
-    # @todo 
+    # Consult Policy table for this. This is just an inclusion flag that 'might' 
+    # be useful while searching this table and filtering results.
+    # Or, when we don't want the policy table at all (it's just a simple-minded 
+    # blog)
+    is_active = models.BooleanField(default=False)
+    
+    # @todo : The last modified filed should be updated only when the data field
+    # or title field changes.
     last_modified = models.DateTimeField("Last modified", auto_now = True)
+    
+    objects = managers.ContentManager()
     
     def save(self, *args, **kwargs):
         if len(self.title) == 0:
@@ -32,3 +44,38 @@ class Content(models.Model):
     
     def __str__(self):
         return self.title
+
+if blog_settings.USE_POLICY:
+    class Policy(models.Model):
+        """
+        Model for creating publishing policies on Blog Content
+        Policies may include things like:
+        - Publish Now
+        - Unpublish Now
+        - Pin Entry
+        - Schedule Un-pin
+        - Publication On Schedule
+        - Unpublish on Schedule
+        
+        Publish is generalized to a schedule using start and stop dates.
+        Similarly, Pinning is also generalized.
+        
+        The Publish Entry is created as soon as the key is assigned to the 
+        post (first save) if Policy is enabled.
+        """
+        PUBLISH = 'PUB'
+        PIN = 'PIN'
+        
+        POLICIES = ((PUBLISH, 'Publish'),
+                    (PIN, 'Pin'),)
+        
+        entry = models.ForeignKey(Content, 
+                                  on_delete = models.CASCADE, 
+                                  related_name="policy")
+        policy = models.CharField(max_length=5,
+                                  choices = POLICIES,
+                                  blank=True,
+                                  default = None)
+        start = models.DateTimeField("Policy Start Date", blank=True, null=True)
+        end = models.DateTimeField("Policy End Date", blank=True, null=True)
+    
