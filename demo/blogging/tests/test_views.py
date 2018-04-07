@@ -23,6 +23,12 @@ class BaseTest(TestCase):
                                              data=data, 
                                              author=self.user)
         
+    def _create_policy(self, content, policy, start=None, stop=None):
+        return models.Policy.objects.create(entry=content, 
+                                            policy=policy,
+                                            start = start,
+                                            end = stop)
+        
     def setUp(self):
         #Use request factory to test views without behaving like a browser
         self.factory = RequestFactory()
@@ -32,6 +38,7 @@ class BaseTest(TestCase):
                                            password=self.password)
         self.client = Client()
         TestCase.setUp(self)
+        print("In method", self._testMethodName)
 
     def tearDown(self):
         TestCase.tearDown(self)
@@ -65,8 +72,19 @@ class IndexView(BaseTest):
                             status_code=200)
 
     def test_get_non_empty_content_list(self):
-        self._create_post(title="Post 1", data="This is post number 1")
-        self._create_post(title="Post 2", data="This is post number 2")
+        from django.utils import timezone
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2")
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
         request = HttpRequest()
         response = views.index(request)
         
@@ -78,6 +96,29 @@ class IndexView(BaseTest):
                             text="Post 2", 
                             count=1,
                             status_code=200)
+
+    def test_get_1_published_1_non_published_content_list(self):
+        from django.utils import timezone
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2")
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=None, 
+                                     stop=None)
+        request = HttpRequest()
+        response = views.index(request)
+        
+        self.assertContains(response=response, 
+                            text="Post 1", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response, text='Post 2', status_code=200)
 
 class ManageView(BaseTest):
     #This view actually should not be visible without login

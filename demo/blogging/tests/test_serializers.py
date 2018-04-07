@@ -23,6 +23,7 @@ class BaseTest(APITestCase):
                                              )
         
         self.factory = APIRequestFactory()
+        print("In method", self._testMethodName)
 
     def tearDown(self):
         APITestCase.tearDown(self)

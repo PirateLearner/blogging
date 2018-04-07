@@ -1,14 +1,16 @@
 from django.shortcuts import render
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 
-from blogging.models import Content
+from django.db import transaction
 
+from blogging.models import Content, Policy
+from django.utils import timezone
 
 
 # Create your views here.
 
 def index(request):
-    entries = Content.objects.all()
+    entries = Content.objects.get_published()
     context = {'entries': entries,}
     #from django.template import loader
     #template = loader.get_template("blogging/index.html")
@@ -79,7 +81,22 @@ class EditView(View):
         if form.is_valid():
             instance = form.save(commit=False)
             instance.author = request.user
-            instance.save()
+            with transaction.atomic():
+                instance.save()
+                if(instance.id is not None):
+                    policy = Policy.objects.get_or_create(entry=instance, 
+                                                      policy=Policy.PUBLISH)[0]
+                    if 'Publish' in request.POST:
+                        if policy.end is not None:
+                            if timezone.now() >= policy.end:
+                                policy.end = None
+                        if policy.start is None or policy.start > timezone.now():
+                            policy.start = timezone.now()
+                    policy.save()
+                else:
+                    policy=Policy()
+                policy.entry = instance
+                
             if 'Publish' in request.POST:
                 return HttpResponseRedirect(reverse('blogging:detail', 
                                                 kwargs={"blog_id":instance.id}))

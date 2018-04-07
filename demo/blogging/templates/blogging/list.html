@@ -2,7 +2,18 @@
   <ul>
     {% for entry in entries %}
       <li>
-          <a href="{% url 'blogging:detail' entry.id %}">{{ entry.title }}</a>
+          <div>
+            <span><a href="{% url 'blogging:detail' entry.id %}">{{ entry.title }}</a></span>
+            {% with entry.policy.all|first as policy %}
+            <span>
+            {% ifequal policy.get_policy_display 'Publish' %}
+              Published
+            {% else %}
+              Draft
+            {% endifequal %}
+            </span>
+            {% endwith %}
+          </div>
       </li>
     {% endfor %}
   </ul>
