@@ -8,6 +8,7 @@ from rest_framework import routers
 from blogging.rest import views
 
 router = routers.SimpleRouter()
+router.register(r'content/manage', views.ManageView, base_name='content/manage')
 router.register(r'content', views.ContentView, base_name='content')
 
 

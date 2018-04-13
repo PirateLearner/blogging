@@ -4,11 +4,12 @@ Created on 15-Mar-2018
 @author: anshul
 '''
 
-from blogging.models import Content
+from blogging.models import Content, Policy
 from rest_framework import serializers
 
 from django.contrib.auth.models import User
-from rest_framework.serializers import HyperlinkedRelatedField,CharField
+from rest_framework.serializers import (HyperlinkedRelatedField,CharField,
+                                        DateTimeField)
 
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
@@ -31,3 +32,13 @@ class ContentSerializer(serializers.HyperlinkedModelSerializer):
                 return False
             return True
         return False
+    
+class PolicySerializer(serializers.HyperlinkedModelSerializer):
+    entry = HyperlinkedRelatedField(queryset = Content.objects.all(),
+                                    view_name = 'content-detail')
+    start = DateTimeField(required=False)
+    end = DateTimeField(required=False)
+    
+    class Meta:
+        model = Policy
+        fields = ('id', 'url', 'entry', 'start', 'end')

@@ -46,6 +46,7 @@ class Content(models.Model):
         return self.title
 
 if blog_settings.USE_POLICY:
+    from django.utils import timezone
     class Policy(models.Model):
         """
         Model for creating publishing policies on Blog Content
@@ -78,4 +79,10 @@ if blog_settings.USE_POLICY:
                                   default = None)
         start = models.DateTimeField("Policy Start Date", blank=True, null=True)
         end = models.DateTimeField("Policy End Date", blank=True, null=True)
+        
+        def is_published(self):
+            if self.start is not None and self.start <= timezone.now():
+                if self.end is None or self.end > timezone.now():
+                    return True
+            return False
     
