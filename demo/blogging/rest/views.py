@@ -9,25 +9,31 @@ from rest_framework.response import Response
 from blogging.settings import blog_settings
 
 from blogging.models import Content
-from blogging.rest.serializers import ContentSerializer
+from blogging.rest.serializers import ContentSerializer, ManageSerializer
 
 from django.http import Http404
 
 from rest_framework.decorators import (list_route, 
                                        detail_route)
 
-from rest_framework.permissions import IsAdminUser
 from blogging.rest.permissions import IsAdminOrAuthor
 
 from django.db.models import Q
 from django.utils import timezone
 
+
 class ContentView(viewsets.ViewSet):
-    queryset = Content.objects.get_published().order_by('-create_date')
     http_method_names = ['get', 'head']
     
-    def list(self, request, format=None):
+    def get_queryset(self):
         queryset = Content.objects.get_published().order_by('-create_date')
+        username = self.request.query_params.get('author', None)
+        if username is not None:
+            queryset = queryset.filter(author__username=username)
+        return queryset
+    
+    def list(self, request, format=None):
+        queryset = self.get_queryset()
         serializer = ContentSerializer(queryset, 
                                        many=True, 
                                        context={'request':request})
@@ -51,11 +57,26 @@ class ContentView(viewsets.ViewSet):
         serializer = ContentSerializer(instance=obj, 
                                        context={'request':request})
         return Response(serializer.data)
+    
+    @list_route(['get'])
+    def filter(self, request, format=None):
+        """
+        This is just for demo purposes for now
+        """
+        serializer = ContentSerializer(self.get_queryset(), 
+                                       many=True, 
+                                       context={'request':request})
+        return Response(serializer.data)
         
-
 class ManageView(viewsets.ViewSet):
-    queryset = Content.objects.all().order_by('-create_data')
-
+    
+    def get_queryset(self):
+        queryset = Content.objects.get_published().order_by('-create_date')
+        username = self.request.query_params.get('author', None)
+        if username is not None:
+            queryset = queryset.filter(author__username=username)
+        return queryset
+    
     def get_permissions(self):
         if self.action == 'destroy':
             permission_classes = [permission() for permission in [IsAdminOrAuthor]]
@@ -64,14 +85,13 @@ class ManageView(viewsets.ViewSet):
         return permission_classes
     
     def list(self, request, format=None):
-        queryset = Content.objects.all().order_by('-create_date')
-        serializer = ContentSerializer(queryset, 
+        serializer = ManageSerializer(self.get_queryset(), 
                                        many=True, 
                                        context={'request':request})
         return Response(serializer.data)
     
     def create(self, request, format=None):
-        serializer = ContentSerializer(data=request.data, 
+        serializer = ManageSerializer(data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save(author=request.user)
@@ -86,25 +106,26 @@ class ManageView(viewsets.ViewSet):
         
     def retrieve(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ContentSerializer(instance=obj, 
+        serializer = ManageSerializer(instance=obj, 
                                        context={'request':request})
         return Response(serializer.data)
         
     def update(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ContentSerializer(instance=obj, data=request.data, 
+        serializer = ManageSerializer(instance=obj, data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
     def post(self, request, pk, format=None):
         return self.update(request, pk, format)
     
     def partial_update(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ContentSerializer(instance=obj, data=request.data, 
+        serializer = ManageSerializer(instance=obj, data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save()
