@@ -18,10 +18,10 @@ from unittest import skip
 from django.shortcuts import render
 
 class BaseTest(TestCase):
-    def _create_post(self, title, data):
+    def _create_post(self, title, data, author=None):
         return models.Content.objects.create(title=title, 
                                              data=data, 
-                                             author=self.user)
+                                             author=author if author is not None else self.user)
         
     def _create_policy(self, content, policy, start=None, stop=None):
         return models.Policy.objects.create(entry=content, 
@@ -120,6 +120,35 @@ class IndexView(BaseTest):
                             status_code=200)
         self.assertNotContains(response, text='Post 2', status_code=200)
 
+    def test_get_with_author_filter(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        
+        request = HttpRequest()
+        request.GET['author']= 'tester2'
+        response = views.index(request)
+        
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response, text='Post 1', status_code=200)
+
 class ManageView(BaseTest):
     #This view actually should not be visible without login
     #And later, must be filtered by author
@@ -175,6 +204,43 @@ class ManageView(BaseTest):
                             text="Post 2", 
                             count=1,
                             status_code=200)
+        
+        
+    def test_get_with_author_filter(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        
+        request = HttpRequest()
+        request.GET['author']= 'tester2'
+        request.user = self.user
+        response = views.manage(request)
+        
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response, text='Post 1', status_code=200)
+        
+    def test_get_with_draft_filter(self):
+        pass
+    
+    def test_get_with_published_filter(self):
+        pass
 
 class DetailView(BaseTest):
     def test_resolve_detail_blog_page(self):

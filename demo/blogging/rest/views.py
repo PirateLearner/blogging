@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from blogging.settings import blog_settings
 
 from blogging.models import Content
+if blog_settings.USE_POLICY:
+    from blogging.models import Policy
 from blogging.rest.serializers import ContentSerializer, ManageSerializer
 
 from django.http import Http404
@@ -44,7 +46,6 @@ class ContentView(viewsets.ViewSet):
             if not blog_settings.USE_POLICY:
                 return Content.objects.filter(id=pk).filter(is_active=True) 
             
-            from blogging.models import Policy
             return Content.objects.filter(id = pk).filter(Q(policy__policy=
                                 Policy.PUBLISH)& Q(policy__start__lte=
                                 timezone.now()) & (Q(policy__end__gt=
@@ -71,10 +72,36 @@ class ContentView(viewsets.ViewSet):
 class ManageView(viewsets.ViewSet):
     
     def get_queryset(self):
-        queryset = Content.objects.get_published().order_by('-create_date')
         username = self.request.query_params.get('author', None)
+        draft_only = self.request.query_params.get('drafts', None)
+        publish_only = self.request.query_params.get('published', None)
+        if draft_only is not None and publish_only is not None:
+            #Both are set, that implies get all
+            draft_only = None
+            publish_only = None
+            
+        filtermap = {'author': Q(author__username=username),
+                     'draft' : Q(policy__policy=Policy.PUBLISH) & 
+                               ( Q(policy__start__isnull=True) | 
+                                 Q(policy__start__gt= timezone.now()) |
+                                 (  Q(policy__start__lte=timezone.now()) & 
+                                    Q(policy__end__lt=timezone.now())
+                                  )
+                                ),
+                     'published':(Q(policy__policy=
+                                Policy.PUBLISH)& Q(policy__start__lte=
+                                timezone.now()) & (Q(policy__end__gt=
+                                timezone.now()) | Q(policy__end__isnull=True)))}
+        
+        queryset = Content.objects.all().order_by('-create_date')
+        
         if username is not None:
-            queryset = queryset.filter(author__username=username)
+            queryset = queryset.filter(filtermap['author'])
+        if draft_only is not None:
+            queryset = queryset.filter(filtermap['draft'])
+        elif publish_only is not None:
+            queryset = queryset.filter(filtermap['published'])
+            
         return queryset
     
     def get_permissions(self):
