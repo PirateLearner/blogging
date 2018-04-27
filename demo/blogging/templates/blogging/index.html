@@ -1,3 +1,5 @@
+{% extends "blogging/base.html" %}
+{% block content %}
 {% if entries %}
   <ul>
     {% for entry in entries %}
@@ -15,3 +17,4 @@
 {% else %}
 <h3>No posts have been created yet. Start writing!</h3>
 {% endif %}
+{% endblock %}

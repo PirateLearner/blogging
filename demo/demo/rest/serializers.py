@@ -13,6 +13,11 @@ from rest_framework import serializers
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name="user-detail")
+    gravatar = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('url', 'id', 'username', 'email', 'is_staff')
+        fields = ('url', 'id', 'username', 'email', 'is_staff', 'gravatar')
+        
+    def get_gravatar(self, obj):
+        return '#'
