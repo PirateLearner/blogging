@@ -10,6 +10,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.serializers import (HyperlinkedRelatedField,CharField)
 from blogging.settings import blog_settings
+from django.db import transaction
 
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
@@ -41,7 +42,8 @@ if blog_settings.USE_POLICY:
             model = Policy
             fields = ('id', 'entry', 'policy', 'start', 'end')
             extra_kwargs = {'start': {'required': False},
-                            'end': {'required': False}}
+                            'end': {'required': False},
+                            'entry': {'required': False}}
     
     class ManageSerializer(ContentSerializer):
         policy = PolicySerializer(many=True)
@@ -54,21 +56,23 @@ if blog_settings.USE_POLICY:
             
         def create(self, validated_data):
             policy_data = validated_data.pop('policy')
-            entry = Content.objects.create(**validated_data)
-            for policy in policy_data:
-                Policy.objects.create(entry=entry, **policy)
+            with transaction.atomic():
+                entry = Content.objects.create(**validated_data)
+                for policy in policy_data:
+                    Policy.objects.create(entry=entry, **policy)
             return entry
         
         def update(self, instance, validated_data):
             policy_data = validated_data.pop('policy')
             instance.title = validated_data.get('title', instance.title)
             instance.data = validated_data.get('data', instance.data)
-            instance.save()
-            for policy_entry in policy_data:
-                policy = instance.policy.get(policy=policy_entry.get('policy'))
-                policy.start = policy_entry.get('start', policy.start)
-                policy.end = policy_entry.get('end', policy.end)
-                policy.save()
+            with transaction.atomic():
+                instance.save()
+                for policy_entry in policy_data:
+                    policy = instance.policy.get(policy=policy_entry.get('policy'))
+                    policy.start = policy_entry.get('start', policy.start)
+                    policy.end = policy_entry.get('end', policy.end)
+                    policy.save()
             return instance
 else:
     class ManageSerializer(ContentSerializer):

@@ -134,18 +134,18 @@ class listAPITests(BaseTest):
         
 
 class manageAPITests(BaseTest):
+    #Nothing is allowed without login credentials
     def test_get_empty_content_list(self):
         request = self.factory.get('/rest/content/manage')
         view = ManageView.as_view({'get': 'list'})
         
         response = view(request)
         self.assertEqual(response.status_code, 
-                         status.HTTP_200_OK, 
-                         "Status code must be 200,"+
+                         status.HTTP_403_FORBIDDEN, 
+                         "Status code must be 403,"+
                          " but {a} was returned".format(a=response.status_code))
         response.render() #Must be called before anything happens
         
-        self.assertListEqual(json.loads(response.content), [], "Non-empty list returned")
     
     def test_get_non_empty_content_list(self):
         models.Content.objects.create(author=self.user,
@@ -160,8 +160,8 @@ class manageAPITests(BaseTest):
         
         response = view(request)
         self.assertEqual(response.status_code, 
-                         status.HTTP_200_OK, 
-                         "Status code must be 200,"+
+                         status.HTTP_403_FORBIDDEN, 
+                         "Status code must be 403,"+
                          " but {a} was returned".format(a=response.status_code))
         response.render() #Must be called before anything happens
         #print(response.content)
@@ -261,6 +261,9 @@ class manageAPITests(BaseTest):
                             count=0,
                             status_code=status.HTTP_400_BAD_REQUEST)
 
+    def test_post_new_content_with_policy_no_pk(self):
+        pass
+    
 
 class detailAPITests(BaseTest):
     def test_get_non_existing_object(self):
@@ -337,17 +340,8 @@ class detailAPITests(BaseTest):
         self.assertContains(response,
                             text='OK',
                             count=0,
-                            status_code=status.HTTP_200_OK)
+                            status_code=status.HTTP_403_FORBIDDEN)
 
-        text = json.loads(response.content)
-        self.assertEqual(text['title'],
-                         'Test Post',
-                         "Titles don't match")
-        self.assertEqual(text['data'],
-                         "We are entering some"+
-                         "test data into this to"+
-                         " test creation.",
-                         "Titles don't match")        
 
     def test_get_on_exsting_object_with_login(self):
         obj = models.Content.objects.create(author=self.user,
@@ -482,3 +476,9 @@ class detailAPITests(BaseTest):
                             count=0, 
                             status_code=status.HTTP_204_NO_CONTENT)
 
+    def test_edit_content_with_policy_no_pk(self):
+        pass
+    
+    def test_edit_content_with_policy(self):
+        pass
+    

@@ -290,7 +290,7 @@ class PolicyModel(BaseTest):
         now = timezone.now()
         create_date = timezone.datetime.combine(datetime.date(now.year, 
                                                         now.month, 
-                                                        now.day-2),
+                                        (now.day-2) if (now.day -2) > 0 else 1),
                                           datetime.time(now.hour,
                                                         now.minute))
         create_date = timezone.make_aware(create_date)
@@ -328,7 +328,7 @@ class PolicyModel(BaseTest):
         now = timezone.now()
         create_date = timezone.datetime.combine(datetime.date(now.year, 
                                                         now.month, 
-                                                        now.day-2),
+                                        (now.day-2) if (now.day -2) > 0 else 1),
                                           datetime.time(now.hour,
                                                         now.minute))
         create_date = timezone.make_aware(create_date)

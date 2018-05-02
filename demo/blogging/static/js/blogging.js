@@ -5,104 +5,104 @@ $(document).ready(function(){
        *  Generic and general methods             *
        *******************************************/
        utils : {
-	      /**
-	       * @brief Get Cookie of \<name\> from the DOM Cookie Object
-	       */
-	      getCookie : function(name){
-	          var cookieValue = null;
-	          if (document.cookie && document.cookie != ''){
-	              var cookies = document.cookie.split(';');
-	              for(var i=0; i < cookies.length; i++){
-	                  var cookie = jQuery.trim(cookies[i]);
-	                  if(cookie.substring(0, name.length+1) == (name + '=')){
-	                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-	                      break;
-	                  }
-	              }
-	          }
-	          return cookieValue;
-	      },/* end getCookie */
-	      
-	      /**
-	       * @brief Test currently requested method if it is CSRF safe or not.
-	       */
-	      csrfSafeMethod : function(method){
-	          return(/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-	      },/* end csrfSafeMethod */
-	      
-	      
-	      handleAjaxError : function(xhRequest, ErrorText, thrownError){
-	          //alert( "Sorry, there was a problem!" );
-	          console.log( "Error: " + errorThrown );
-	          console.log( "Status: " + status );
-	          console.dir( xhr );
-	      },
-	      
-	      handleAjaxComplete : function(xhr, status){
-	        console.log("Request Completed with status: "+status);
-	        
-	      },
-	      
-	      /**
-	       * @brief Perform AJAX Get request
-	       * 
-	       * Since most error handling and other operations are the same, just
-	       * passing in the GET url and the method to invoke on success are passed.
-	       * 
-	       * @param url URL     to which GET request must be sent.
-	       * @param onComplete  Method to be invoked on successful response.
-	       * 
-	       */
-	      get : function(url, onComplete){
-	           $.ajax({
-	              url: url,
-	              // the data to send (will be converted to a query string)
-	              data: {format:'json'},
-	              // whether this is a POST or GET request
-	              type: "GET",
-	              // the type of data we expect back
-	              dataType : "json",
-	              // code to run if the request succeeds;
-	              // the response is passed to the function
-	              success: onComplete,
-	              // code to run if the request fails; the raw request and
-	              // status codes are passed to the function
-	              error: blogging.utils.handleAjaxError,
-	              // code to run regardless of success or failure
-	              complete: blogging.utils.handleAjaxComplete
-	           });
-	      },
-	      
-	      setupUser : function(data){
-	        console.log(data);
-	        if(!('id' in data)){
-	            blogging.currentUser = blogging.guestUser;
-	        }
-	        else{
-	            blogging.currentUser = {
-	                            id:       data['id'],
-	                            username: data['username'],
-	                            gravatar: data['gravatar'],
-	                            url:      "#",
-	                          };
-	        }
-	      },
-	      /**
-	       * Get information about current user, if logged in. 
-	       * Else, use Guest User credentials.
-	       */
-	      getCurrentUser : function(){
-	          $.ajaxSetup({
-	              beforeSend: function(xhr, settings) {
-	                  if (!blogging.utils.csrfSafeMethod(settings.type) && !this.crossDomain) {
-	                      xhr.setRequestHeader("X-CSRFToken", csrftoken);
-	                  }
-	              }
-	          });
-	          
-	          blogging.utils.get("/rest/users/current/", blogging.utils.setupUser);
-	      },/* function getCurrentUser ends */
-	  },/* Namespace utils end */
+          /**
+           * @brief Get Cookie of \<name\> from the DOM Cookie Object
+           */
+          getCookie : function(name){
+              var cookieValue = null;
+              if (document.cookie && document.cookie != ''){
+                  var cookies = document.cookie.split(';');
+                  for(var i=0; i < cookies.length; i++){
+                      var cookie = jQuery.trim(cookies[i]);
+                      if(cookie.substring(0, name.length+1) == (name + '=')){
+                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                          break;
+                      }
+                  }
+              }
+              return cookieValue;
+          },/* end getCookie */
+          
+          /**
+           * @brief Test currently requested method if it is CSRF safe or not.
+           */
+          csrfSafeMethod : function(method){
+              return(/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+          },/* end csrfSafeMethod */
+          
+          
+          handleAjaxError : function(xhRequest, ErrorText, thrownError){
+              //alert( "Sorry, there was a problem!" );
+              console.log( "Error: " + thrownError );
+              console.log( "Status: " + ErrorText );
+              console.dir( xhRequest );
+          },
+          
+          handleAjaxComplete : function(xhr, status){
+            console.log("Request Completed with status: "+status);
+            
+          },
+          
+          /**
+           * @brief Perform AJAX Get request
+           * 
+           * Since most error handling and other operations are the same, just
+           * passing in the GET url and the method to invoke on success are passed.
+           * 
+           * @param url URL     to which GET request must be sent.
+           * @param onComplete  Method to be invoked on successful response.
+           * 
+           */
+          get : function(url, onComplete){
+               $.ajax({
+                  url: url,
+                  // the data to send (will be converted to a query string)
+                  data: {format:'json'},
+                  // whether this is a POST or GET request
+                  type: "GET",
+                  // the type of data we expect back
+                  dataType : "json",
+                  // code to run if the request succeeds;
+                  // the response is passed to the function
+                  success: onComplete,
+                  // code to run if the request fails; the raw request and
+                  // status codes are passed to the function
+                  error: blogging.utils.handleAjaxError,
+                  // code to run regardless of success or failure
+                  complete: blogging.utils.handleAjaxComplete
+               });
+          },
+          
+          setupUser : function(data){
+            console.log(data);
+            if(!('id' in data)){
+                blogging.currentUser = blogging.guestUser;
+            }
+            else{
+                blogging.currentUser = {
+                                id:       data['id'],
+                                username: data['username'],
+                                gravatar: data['gravatar'],
+                                url:      "#",
+                              };
+            }
+          },
+          /**
+           * Get information about current user, if logged in. 
+           * Else, use Guest User credentials.
+           */
+          getCurrentUser : function(){
+              $.ajaxSetup({
+                  beforeSend: function(xhr, settings) {
+                      if (!blogging.utils.csrfSafeMethod(settings.type) && !this.crossDomain) {
+                          xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                      }
+                  }
+              });
+              
+              blogging.utils.get("/rest/users/current/", blogging.utils.setupUser);
+          },/* function getCurrentUser ends */
+      },/* Namespace utils end */
       
       admin : {
         /********************************************
@@ -124,7 +124,7 @@ $(document).ready(function(){
         getEntry : function(id){
             username = "dummy";
             filter_string = '?user='+username;
-            get('/rest/content/manage/'+id+'/', blogging.admin.parseEntry);
+            blogging.utils.get('/rest/content/manage/'+id+'/', blogging.admin.parseEntry);
         },
       
         /**
@@ -138,7 +138,9 @@ $(document).ready(function(){
         /**
          * @brief Save the form contents
          */
-        saveEntry : function(){
+        saveEntry : function(data){
+          console.log(data);
+          
           $.ajaxSetup({
             beforeSend: function(xhr, settings) {
                 if (!blogging.utils.csrfSafeMethod(settings.type) && !this.crossDomain) {
@@ -147,17 +149,22 @@ $(document).ready(function(){
             }
           });
           
+          url = "/rest/content/manage/";
+          if ('id' in data)
+          {
+              url = url+data['id']+'/';
+          }
           //Save Form Data
           $.ajax({
             cache: false,
-            url : "/rest/content/manage/",
+            url : url,
             type: "POST",
             dataType : "json",
             contentType: "application/json;",
             data : JSON.stringify(data),
             context : this,
             success : blogging.admin.parseEntry,
-            error : utils.handleAjaxError
+            error : blogging.utils.handleAjaxError
           }); 
         },
         /**
@@ -186,7 +193,7 @@ $(document).ready(function(){
            /* TODO */
            username='user'
            filter_string = '?user='+username;
-           get('/rest/content/manage/', blogging.admin.parseContent);
+           blogging.utils.get('/rest/content/manage/', blogging.admin.parseContent);
          },
        
          /**
@@ -212,7 +219,7 @@ $(document).ready(function(){
          */
         getEntry : function(id){
            filter_string = '?user='+username;
-           utils.get('/rest/content/'+id+'/', blogging.open.parseEntry);
+           blogging.utils.get('/rest/content/'+id+'/', blogging.open.parseEntry);
         },
       
         /**
@@ -233,7 +240,7 @@ $(document).ready(function(){
            /* TODO */
            username='user'
            filter_string = '?user='+username;
-           utils.get('/rest/content/', blogging.open.parseContent);
+           blogging.utils.get('/rest/content/', blogging.open.parseContent);
          },
        
          /**
@@ -263,4 +270,30 @@ $(document).ready(function(){
     blogging.csrftoken = blogging.utils.getCookie('csrftoken');
     blogging.currentUser = blogging.guestUser;
     blogging.utils.getCurrentUser();
+    
+    /* These are for testing only */
+    var post_list = [];
+    
+    /* Public API */
+    blogging.open.getContent();
+    blogging.open.getEntry("1");
+    blogging.open.getEntry("2"); /* Expect 404 */
+    
+    /* Admin side API */
+    blogging.admin.getContent();
+    blogging.admin.getEntry("1");
+    blogging.admin.getEntry("2");
+    
+    /* Saving Entires */
+    var data = {
+                'id': 9,
+                'title':"Test post via JS!",
+                'data' :"Test post content modified via JS request again",
+                'policy': [{
+                            'entry': 9,
+                            'policy':"PUB",
+                            'start': "2018-05-02T04:00:40Z"
+                           }]
+                };
+    blogging.admin.saveEntry(data);
 });

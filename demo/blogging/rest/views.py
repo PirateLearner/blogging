@@ -19,6 +19,7 @@ from rest_framework.decorators import (list_route,
                                        detail_route)
 
 from blogging.rest.permissions import IsAdminOrAuthor
+from rest_framework.permissions import IsAuthenticated
 
 from django.db.models import Q
 from django.utils import timezone
@@ -70,6 +71,7 @@ class ContentView(viewsets.ViewSet):
         return Response(serializer.data)
         
 class ManageView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         username = self.request.query_params.get('author', None)
@@ -146,7 +148,6 @@ class ManageView(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    
     def post(self, request, pk, format=None):
         return self.update(request, pk, format)
     
