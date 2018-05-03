@@ -12,6 +12,7 @@ from rest_framework.serializers import (HyperlinkedRelatedField,CharField)
 from blogging.settings import blog_settings
 from django.db import transaction
 
+
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
                                      view_name='user-detail',
@@ -29,11 +30,28 @@ class ContentSerializer(serializers.HyperlinkedModelSerializer):
         if (serializers.HyperlinkedModelSerializer.is_valid(self)):
             #If some field is not posted, it is missing in the dictionary
             #Unlike forms where it is empty
-            if self._validated_data.get('title',None) is None \
-               and self._validated_data.get('data', None) is None:
-                self.errors['detail'] = ['Either title or content must be non-empty']
-                return False
-            return True
+            #Perform this check only on new creations
+            if self.instance is None:
+                if (self._validated_data.get('title',None) is None \
+                   and self._validated_data.get('data', None) is None) or \
+                   (self._validated_data.get('title',None) is not None \
+                   and self._validated_data.get('data', None) is not None and \
+                   len(self._validated_data.get('title').strip()) == 0 and \
+                   len(self._validated_data.get('data').strip()) == 0):
+                    self.errors['detail'] = ['Either title or content must be non-empty']
+                    return False
+                return True
+            else:
+                #It is possible that we are partially updating stuff. So, both 
+                # fields may not be updated. But text must not be empty if they
+                # are non-empty
+                if (self._validated_data.get('title',None) is not None \
+                   and self._validated_data.get('data', None) is not None and \
+                   len(self._validated_data.get('title').strip()) == 0 and \
+                   len(self._validated_data.get('data').strip()) == 0):
+                    self.errors['detail'] = ['Either title or content must be non-empty']
+                    return False
+                return True
         return False
 
 if blog_settings.USE_POLICY:
@@ -52,7 +70,10 @@ if blog_settings.USE_POLICY:
             model = Content
             fields = ('url', 'id', 'title', 'data', 'author', 'create_date', 
                       'last_modified', 'policy')
-            extra_kwargs = {'url': {'view_name':'content/manage-detail'}}
+            extra_kwargs = {'url': {'view_name':'content/manage-detail'},
+                            'title': {'max_length': 100,
+                                      'required': False},
+                            }
             
         def create(self, validated_data):
             policy_data = validated_data.pop('policy')

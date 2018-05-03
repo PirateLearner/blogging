@@ -150,15 +150,17 @@ $(document).ready(function(){
           });
           
           url = "/rest/content/manage/";
+          type = "POST";
           if ('id' in data)
           {
               url = url+data['id']+'/';
+              type = "PUT";
           }
           //Save Form Data
           $.ajax({
             cache: false,
             url : url,
-            type: "POST",
+            type: type,
             dataType : "json",
             contentType: "application/json;",
             data : JSON.stringify(data),
@@ -166,6 +168,32 @@ $(document).ready(function(){
             success : blogging.admin.parseEntry,
             error : blogging.utils.handleAjaxError
           }); 
+        },
+        
+        deleteEntry : function(id){
+            console.log("Delete "+id);
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!blogging.utils.csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", blogging.csrftoken);
+                    }
+                }
+            });
+              
+            url = "/rest/content/manage/"+id+'/';
+            type = "DELETE";
+            //Send delete request
+            $.ajax({
+              cache: false,
+              url : url,
+              type: type,
+              dataType : "json",
+              contentType: "application/json;",
+              data : JSON.stringify(data),
+              context : this,
+              success : blogging.admin.parseResponse,
+              error : blogging.utils.handleAjaxError
+            });
         },
         /**
          * @brief Perform action on entry
@@ -205,7 +233,16 @@ $(document).ready(function(){
               console.log(contentList[i]);
             }
           },
-       
+          
+          /****************************************
+           * General Helpers                      *
+           ***************************************/
+          /**
+           * @brief Parse the response of request.
+           */
+          parseResponse : function(response){
+            console.log(response);
+          },
       },/* Admin namespace end */
        
       open : {
@@ -287,13 +324,16 @@ $(document).ready(function(){
     /* Saving Entires */
     var data = {
                 'id': 9,
-                'title':"Test post via JS!",
-                'data' :"Test post content modified via JS request again",
+                //'title':"Test post via JS!",
+                //'data' :"Test post content modified via JS request again using put",
                 'policy': [{
                             'entry': 9,
                             'policy':"PUB",
-                            'start': "2018-05-02T04:00:40Z"
+                            'start': "2018-05-02T04:00:40Z",
+                            'end'  : "2018-05-03T04:00:40Z",
                            }]
                 };
     blogging.admin.saveEntry(data);
+    
+    //blogging.admin.deleteEntry(10);
 });

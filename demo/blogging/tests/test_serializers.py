@@ -261,6 +261,17 @@ class manageAPITests(BaseTest):
                             count=0,
                             status_code=status.HTTP_400_BAD_REQUEST)
 
+    def test_post_with_empty_title_and_emtpy_data(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/rest/content/manage/', 
+                                    {'title': ' ',
+                                     'data': ''})
+        response.render() #Must be called before anything happens
+        self.assertContains(response,
+                            text='OK',
+                            count=0,
+                            status_code=status.HTTP_400_BAD_REQUEST)
+        
     def test_post_new_content_with_policy_no_pk(self):
         pass
     
