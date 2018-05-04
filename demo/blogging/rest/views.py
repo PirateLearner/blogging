@@ -11,7 +11,8 @@ from blogging.settings import blog_settings
 from blogging.models import Content
 if blog_settings.USE_POLICY:
     from blogging.models import Policy
-from blogging.rest.serializers import ContentSerializer, ManageSerializer
+from blogging.rest.serializers import (ContentSerializer, ManageSerializer, 
+                                       BulkAction)
 
 from django.http import Http404
 
@@ -119,6 +120,16 @@ class ManageView(viewsets.ViewSet):
                                        context={'request':request})
         return Response(serializer.data)
     
+    @list_route(['post'])
+    def action(self, request, format=None):
+        serializer = BulkAction(data = request.data,
+                                context={'request':request})
+        if serializer.is_valid():
+            serializer.save()
+            print(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     def create(self, request, format=None):
         serializer = ManageSerializer(data=request.data, 
                                        context={'request':request})
@@ -164,7 +175,7 @@ class ManageView(viewsets.ViewSet):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+        
     @detail_route(['post', 'put', 'patch', 'delete'])
     def publish(self, request, pk, format=None):
         pass

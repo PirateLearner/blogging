@@ -195,20 +195,6 @@ $(document).ready(function(){
               error : blogging.utils.handleAjaxError
             });
         },
-        /**
-         * @brief Perform action on entry
-         * 
-         * This can be:
-         * - Publish
-         * - Unpublish
-         * - Pin
-         * - Unpin
-         * - Delete
-         * - Save
-         */
-         action : function(signal, multiple){
-       
-         },
          
         /********************************************
          *  Bulk Operations: Management Side        *
@@ -234,6 +220,63 @@ $(document).ready(function(){
             }
           },
           
+          /**
+           * @brief Perform action on entr(y/ies)
+           * 
+           * This can be:
+           * - Publish
+           * - Unpublish
+           * - Pin
+           * - Unpin
+           * - Delete
+           */
+           action : function(signal, entries){
+             switch(signal){
+               case 'PUB':
+                 sig = 'PUBL';
+                 break;
+               case 'UNPUB':
+                 sig = 'UNPB';
+                 break;
+               case 'PIN':
+                 sig = 'PIN';
+                 break;
+               case 'UNPIN':
+                 sig = 'UPIN';
+                 break;
+               case 'DEL':
+                 sig = 'DEL';
+                 break;
+             }
+             
+             console.log(entries);
+             
+             $.ajaxSetup({
+                 beforeSend: function(xhr, settings) {
+                     if (!blogging.utils.csrfSafeMethod(settings.type) && !this.crossDomain) {
+                         xhr.setRequestHeader("X-CSRFToken", blogging.csrftoken);
+                     }
+                 }
+             });
+              
+             url = "/rest/content/manage/action/";
+             type = "POST";
+             data = {'objects': entries,
+                     'action': sig};
+
+             //Send delete request
+             $.ajax({
+               cache: false,
+               url : url,
+               type: type,
+               dataType : "json",
+               contentType: "application/json;",
+               data : JSON.stringify(data),
+               context : this,
+               success : blogging.admin.parseResponse,
+               error : blogging.utils.handleAjaxError
+             });
+           },
           /****************************************
            * General Helpers                      *
            ***************************************/
@@ -312,14 +355,14 @@ $(document).ready(function(){
     var post_list = [];
     
     /* Public API */
-    blogging.open.getContent();
-    blogging.open.getEntry("1");
-    blogging.open.getEntry("2"); /* Expect 404 */
+    //blogging.open.getContent();
+    //blogging.open.getEntry("1");
+    //blogging.open.getEntry("2"); /* Expect 404 */
     
     /* Admin side API */
-    blogging.admin.getContent();
-    blogging.admin.getEntry("1");
-    blogging.admin.getEntry("2");
+    //blogging.admin.getContent();
+    //blogging.admin.getEntry("1");
+    //blogging.admin.getEntry("2");
     
     /* Saving Entires */
     var data = {
@@ -333,7 +376,8 @@ $(document).ready(function(){
                             'end'  : "2018-05-03T04:00:40Z",
                            }]
                 };
-    blogging.admin.saveEntry(data);
+    //blogging.admin.saveEntry(data);
     
     //blogging.admin.deleteEntry(10);
+    blogging.admin.action('PUB', [1,2]);
 });

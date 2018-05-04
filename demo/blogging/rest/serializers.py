@@ -12,6 +12,7 @@ from rest_framework.serializers import (HyperlinkedRelatedField,CharField)
 from blogging.settings import blog_settings
 from django.db import transaction
 
+from django.utils import timezone
 
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
@@ -102,3 +103,50 @@ else:
             fields = ('url','id', 'title', 'data', 'author', 'create_date', 
                       'last_modified', 'is_active')
             extra_kwargs = {'url': {'view_name':'content/manage-detail'}}
+            
+class BulkAction(serializers.Serializer):
+    #Cannot have bulk schedules. That is, it's either ON or OFF
+    objects = serializers.ListField(child=serializers.IntegerField(min_value = 1))
+    action  = serializers.ChoiceField([('PUBL', 'Publish'),
+                                       ('UNPB', 'Unpublish'),
+                                       ('PIN', 'Pin'),
+                                       ('UPIN', 'Unpin'),
+                                       ('DEL', 'Delete')])
+    
+    def create(self, validated_data):
+        object_ids = self.validated_data.get('objects')
+        action = self.validated_data.get('action')
+        
+        if action is 'PUBL' or 'UNPB':
+            action_method = Policy.PUBLISH
+        elif action is 'PIN' or 'UPIN':
+            action_method = Policy.PIN
+        
+        with transaction.atomic():
+            objects = Content.objects.filter(id__in = object_ids)
+            for object in objects:
+                (policy, created) = object.policy.get_or_create(entry=object, 
+                                                      policy=action_method)
+                if action is 'UNPB'and policy.is_published():
+                    policy.end = timezone.now()
+                    policy.save()
+                elif action is 'PUBL' and not policy.is_published():
+                    policy.start = timezone.now()
+                    if policy.end is not None and policy.end <= timezone.now():
+                        policy.end = None
+                    policy.save()
+                elif action is 'UPIN' and policy.is_pinned():
+                    policy.end = timezone.now()
+                    policy.save()
+                elif action is 'PIN' and not policy.is_pinned():
+                    policy.start = timezone.now()
+                    if policy.end is not None and policy.end <= timezone.now():
+                        policy.end = None
+                    policy.save()
+                elif action is 'DEL':
+                    object.delete()
+            return {'objects': object_ids,
+                    'action' : action}
+        return {'objects': object_ids,
+                'action' : action}
+        

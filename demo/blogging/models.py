@@ -81,8 +81,25 @@ if blog_settings.USE_POLICY:
         end = models.DateTimeField("Policy End Date", blank=True, null=True)
         
         def is_published(self):
+            if self.policy == self.PUBLISH:
+                if self.start is not None and self.start <= timezone.now():
+                    if self.end is None or self.end > timezone.now():
+                        return True
+                return False
+            else:
+                raise ValidationError("Invalid Policy type")
+        
+        def is_pinned(self):
+            if self.policy == self.PIN:
+                if self.start is not None and self.start <= timezone.now():
+                    if self.end is None or self.end > timezone.now():
+                        return True
+                return False
+            else:
+                raise ValidationError("Invalid Policy type")
+            
+        def is_active(self):
             if self.start is not None and self.start <= timezone.now():
                 if self.end is None or self.end > timezone.now():
                     return True
             return False
-    
