@@ -399,3 +399,51 @@ class PolicyModel(BaseTest):
         
         qs = models.Content.objects.get_published()
         self.assertEqual(len(qs), 1, "Query set must contain 1 entry.")
+        
+    def test_policy_publish_and_pin(self):
+        obj = []
+        obj.append(self._create_post(title='Post 1', data='Some data'))
+        
+        for entry in obj:
+            policy_obj = models.Policy(entry=entry, 
+                                       policy = models.Policy.PUBLISH,
+                                       start=timezone.now())
+            policy_obj.save()
+            policy_obj = models.Policy(entry=entry, 
+                                       policy = models.Policy.PIN,
+                                       start=timezone.now())
+            policy_obj.save()
+
+        qs = models.Content.objects.get_pinned()
+        returned_objs = []
+        for entry in qs:
+            returned_objs.append(entry)
+        
+        for entry in obj:
+            self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))
+            
+    def test_policy_multiple_publish_and_single_pin(self):
+        obj = []
+        obj.append(self._create_post(title='Post 1', data='Some data'))
+        obj.append(self._create_post(title='Post 2', data='Some data again'))
+        
+        for entry in obj:
+            policy_obj = models.Policy(entry=entry, 
+                                       policy = models.Policy.PUBLISH,
+                                       start=timezone.now())
+            policy_obj.save()
+
+        entry = obj[0]
+        policy_obj = models.Policy(entry=entry, 
+                           policy = models.Policy.PIN,
+                           start=timezone.now())
+        policy_obj.save()
+
+        qs = models.Content.objects.get_pinned()
+        returned_objs = []
+        for entry in qs:
+            returned_objs.append(entry)
+        
+        self.assertNotIn(obj[1], returned_objs, 
+                         "{o} must not be present in Pinned Posts".format(o = obj[1]))
+        

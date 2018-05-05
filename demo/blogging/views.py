@@ -11,10 +11,15 @@ from django.db.models import Q
 
 def index(request):
     username = request.GET.get('author', None)
-    entries = Content.objects.get_published()
+    pin = request.GET.get('pinned', None)
+    if pin is not None:
+        entries = Content.objects.get_pinned(publish_filter=True)
+    else:
+        entries = Content.objects.get_published()
+
     if username is not None:
         entries = entries.filter(author__username=username)
-    
+        
     context = {'entries': entries,}
     #from django.template import loader
     #template = loader.get_template("blogging/index.html")
@@ -27,6 +32,7 @@ from django.contrib.auth.decorators import login_required
 @login_required
 def manage(request):
     username = request.GET.get('author', None)
+    get_pinned = request.GET.get('pinned', None)
     draft_only = request.GET.get('drafts', None)
     publish_only = request.GET.get('published', None)
     if draft_only is not None and publish_only is not None:
@@ -45,12 +51,18 @@ def manage(request):
                  'published':(Q(policy__policy=
                             Policy.PUBLISH)& Q(policy__start__lte=
                             timezone.now()) & (Q(policy__end__gt=
+                            timezone.now()) | Q(policy__end__isnull=True))),
+                 'pinned': (Q(policy__policy=
+                            Policy.PIN)& Q(policy__start__lte=
+                            timezone.now()) & (Q(policy__end__gt=
                             timezone.now()) | Q(policy__end__isnull=True)))}
     
     queryset = Content.objects.all().order_by('-create_date')
     
     if username is not None:
         queryset = queryset.filter(filtermap['author'])
+    if get_pinned is not None:
+        queryset = queryset.filter(filtermap['pinned'])
     if draft_only is not None:
         queryset = queryset.filter(filtermap['draft'])
     elif publish_only is not None:
@@ -116,19 +128,15 @@ class EditView(View):
             instance.author = request.user
             with transaction.atomic():
                 instance.save()
-                if(instance.id is not None):
-                    policy = Policy.objects.get_or_create(entry=instance, 
-                                                      policy=Policy.PUBLISH)[0]
-                    if 'Publish' in request.POST:
-                        if policy.end is not None:
-                            if timezone.now() >= policy.end:
-                                policy.end = None
-                        if policy.start is None or policy.start > timezone.now():
-                            policy.start = timezone.now()
-                    policy.save()
-                else:
-                    policy=Policy()
-                policy.entry = instance
+                (policy, created) = Policy.objects.get_or_create(entry=instance, 
+                                                                 policy=Policy.PUBLISH)
+                if 'Publish' in request.POST:
+                    if policy.end is not None:
+                        if timezone.now() >= policy.end:
+                            policy.end = None
+                    if policy.start is None or policy.start > timezone.now():
+                        policy.start = timezone.now()
+                policy.save()
                 
             if 'Publish' in request.POST:
                 return HttpResponseRedirect(reverse('blogging:detail', 

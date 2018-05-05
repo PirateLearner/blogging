@@ -97,6 +97,8 @@ class IndexView(BaseTest):
                             count=1,
                             status_code=200)
 
+        
+class PolicyTests(BaseTest):
     def test_get_1_published_1_non_published_content_list(self):
         from django.utils import timezone
         entry_1 = self._create_post(title="Post 1", 
@@ -149,6 +151,59 @@ class IndexView(BaseTest):
                             status_code=200)
         self.assertNotContains(response, text='Post 1', status_code=200)
 
+    def test_get_pinned_posts(self):
+        from django.utils import timezone
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        publish_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        pin_1 = self._create_policy(entry_1, 
+                                     models.Policy.PIN, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2")
+        publish_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        request = HttpRequest()
+        request.GET['pinned']= ''
+        response = views.index(request)
+        
+        self.assertContains(response=response, 
+                            text="Post 1", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response=response, 
+                               text="Post 2", 
+                               status_code=200)
+    
+    @skip('Not applicable for now')
+    def test_get_published_with_pinned_has_no_repetitions(self):
+        from django.utils import timezone
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2")
+        publish_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        publish_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        pin_1 = self._create_policy(entry_1, 
+                                     models.Policy.PIN, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        request = HttpRequest()
+        response = views.index(request)
+        print(response.content)
+        
 class ManageView(BaseTest):
     #This view actually should not be visible without login
     #And later, must be filtered by author
@@ -205,7 +260,6 @@ class ManageView(BaseTest):
                             count=1,
                             status_code=200)
         
-        
     def test_get_with_author_filter(self):
         from django.utils import timezone
         user = User.objects.create_user(username="tester2",
@@ -237,10 +291,144 @@ class ManageView(BaseTest):
         self.assertNotContains(response, text='Post 1', status_code=200)
         
     def test_get_with_draft_filter(self):
-        pass
-    
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=None, 
+                                     stop=None)
+        
+        request = HttpRequest()
+        request.GET['drafts']= ''
+        request.user = self.user
+        response = views.manage(request)
+        
+        self.assertNotContains(response, text='Post 1', status_code=200)
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        
+        
+    def test_get_with_author_and_draft_filter(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=None, 
+                                     stop=None)
+        entry_3 = self._create_post(title="Post 3", 
+                                    data="This is post number 3")
+        policy_3 = self._create_policy(entry_3, 
+                                     models.Policy.PUBLISH, 
+                                     start=None, 
+                                     stop=None)
+                
+        request = HttpRequest()
+        request.GET['author']= 'tester2'
+        request.GET['drafts']= ''
+        request.user = self.user
+        response = views.manage(request)
+        
+        self.assertNotContains(response, text='Post 1', status_code=200)
+        self.assertNotContains(response, text='Post 3', status_code=200)
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        
+
     def test_get_with_published_filter(self):
-        pass
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_3 = self._create_post(title="Post 3", 
+                                    data="This is post number 3")
+        
+        request = HttpRequest()
+        request.GET['published']= ''
+        request.user = self.user
+        response = views.manage(request)
+        
+        self.assertContains(response=response, 
+                            text="Post 1", 
+                            count=1,
+                            status_code=200)
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response, text='Post 3', status_code=200)
+        
+    def test_get_with_author_and_published_filter(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        entry_1 = self._create_post(title="Post 1", 
+                                    data="This is post number 1")
+        policy_1 = self._create_policy(entry_1, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_2 = self._create_post(title="Post 2", 
+                                    data="This is post number 2",
+                                    author = user)
+        policy_2 = self._create_policy(entry_2, 
+                                     models.Policy.PUBLISH, 
+                                     start=timezone.now(), 
+                                     stop=None)
+        entry_3 = self._create_post(title="Post 3", 
+                                    data="This is post number 3")
+        
+        request = HttpRequest()
+        request.GET['author']= 'tester2'
+        request.GET['published']= ''
+        request.user = self.user
+        response = views.manage(request)
+        
+        self.assertNotContains(response, text='Post 1', status_code=200)
+        self.assertContains(response=response, 
+                            text="Post 2", 
+                            count=1,
+                            status_code=200)
+        self.assertNotContains(response, text='Post 3', status_code=200)
 
 class DetailView(BaseTest):
     def test_resolve_detail_blog_page(self):

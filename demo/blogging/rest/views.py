@@ -30,10 +30,16 @@ class ContentView(viewsets.ViewSet):
     http_method_names = ['get', 'head']
     
     def get_queryset(self):
-        queryset = Content.objects.get_published().order_by('-create_date')
         username = self.request.query_params.get('author', None)
+        pin = self.request.query_params.get('pins', None)
+        if pin is not None:
+            queryset = Content.objects.get_pinned(publish_filter=True).order_by('-create_date')
+        else:
+            queryset = Content.objects.get_published()
+
         if username is not None:
             queryset = queryset.filter(author__username=username)
+            
         return queryset
     
     def list(self, request, format=None):
@@ -61,16 +67,6 @@ class ContentView(viewsets.ViewSet):
                                        context={'request':request})
         return Response(serializer.data)
     
-    @list_route(['get'])
-    def filter(self, request, format=None):
-        """
-        This is just for demo purposes for now
-        """
-        serializer = ContentSerializer(self.get_queryset(), 
-                                       many=True, 
-                                       context={'request':request})
-        return Response(serializer.data)
-        
 class ManageView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     
@@ -78,6 +74,8 @@ class ManageView(viewsets.ViewSet):
         username = self.request.query_params.get('author', None)
         draft_only = self.request.query_params.get('drafts', None)
         publish_only = self.request.query_params.get('published', None)
+        pin = self.request.query_params.get('pins', None)
+        
         if draft_only is not None and publish_only is not None:
             #Both are set, that implies get all
             draft_only = None
@@ -94,12 +92,18 @@ class ManageView(viewsets.ViewSet):
                      'published':(Q(policy__policy=
                                 Policy.PUBLISH)& Q(policy__start__lte=
                                 timezone.now()) & (Q(policy__end__gt=
+                                timezone.now()) | Q(policy__end__isnull=True))),
+                     'pinned': (Q(policy__policy=
+                                Policy.PIN)& Q(policy__start__lte=
+                                timezone.now()) & (Q(policy__end__gt=
                                 timezone.now()) | Q(policy__end__isnull=True)))}
         
         queryset = Content.objects.all().order_by('-create_date')
         
         if username is not None:
             queryset = queryset.filter(filtermap['author'])
+        if pin is not None:
+            queryset = queryset.filter(filtermap['pinned'])
         if draft_only is not None:
             queryset = queryset.filter(filtermap['draft'])
         elif publish_only is not None:

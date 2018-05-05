@@ -24,7 +24,7 @@ class BaseTest(APITestCase):
                                              email="tester@testing.com", 
                                              password="testing123",
                                              )
-        
+        self.password = 'testing123'
         self.factory = APIRequestFactory()
         print("In method", self._testMethodName)
 
@@ -47,7 +47,32 @@ class listAPITests(BaseTest):
         self.assertListEqual(json.loads(response.content), 
                              [], 
                              "Non-empty list returned")
-    
+
+    def test_get_empty_content_list_all_unpublished(self):
+        obj = models.Content.objects.create(author=self.user,
+                                                title="Test Post",
+                                                data = "We are entering some"+
+                                                     "test data into this to"+
+                                                     " test creation."
+                                                )
+        Policy.objects.create(entry=obj, 
+                              policy=Policy.PUBLISH, 
+                              start=None)
+        request = self.factory.get('/rest/content/')
+        view = ContentView.as_view({'get': 'list'})
+        
+        response = view(request)
+        
+        self.assertEqual(response.status_code, 
+                         status.HTTP_200_OK, 
+                         "Status code must be 200,"+
+                         " but {a} was returned".format(a=response.status_code))
+        response.render() #Must be called before anything happens
+        #print(json.loads(response.content))
+        self.assertEqual(json.loads(response.content), 
+                            [], 
+                            "Non Empty response returned")
+        
     def test_get_non_empty_content_list(self):
         from django.utils import timezone
         obj = models.Content.objects.create(author=self.user,
@@ -131,7 +156,71 @@ class listAPITests(BaseTest):
         self.assertEqual(json.loads(response.content), 
                          [], 
                          "Response should be empty")
+    
+    def test_get_author_filter_1(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
         
+        obj = models.Content.objects.create(author=user,
+                                                title="Test Post",
+                                                data = "We are entering some"+
+                                                     "test data into this to"+
+                                                     " test creation."
+                                                )
+        Policy.objects.create(entry=obj, 
+                              policy=Policy.PUBLISH, 
+                              start=timezone.now())
+
+        
+        request = self.factory.get('/rest/content/?author=tester2')
+        view = ContentView.as_view({'get': 'list'})
+        
+        response = view(request)
+        
+        self.assertEqual(response.status_code, 
+                         status.HTTP_200_OK, 
+                         "Status code must be 200,"+
+                         " but {a} was returned".format(a=response.status_code))
+        response.render() #Must be called before anything happens
+        #print(json.loads(response.content))
+        self.assertNotEqual(json.loads(response.content), 
+                            [], 
+                            "Empty response returned")
+
+
+    def test_get_author_filter_2(self):
+        from django.utils import timezone
+        user = User.objects.create_user(username="tester2",
+                                           email="tester2@testing.co",
+                                           password=self.password)
+        
+        obj = models.Content.objects.create(author=user,
+                                            title="Test Post",
+                                            data = "We are entering some"+
+                                                   "test data into this to"+
+                                                   " test creation."
+                                                )
+        Policy.objects.create(entry=obj, 
+                              policy=Policy.PUBLISH, 
+                              start=timezone.now())
+        
+        request = self.factory.get('/rest/content/?author=Tester')
+        view = ContentView.as_view({'get': 'list'})
+        
+        response = view(request)
+        
+        self.assertEqual(response.status_code, 
+                         status.HTTP_200_OK, 
+                         "Status code must be 200,"+
+                         " but {a} was returned".format(a=response.status_code))
+        response.render() #Must be called before anything happens
+        #print(json.loads(response.content))
+        self.assertEqual(json.loads(response.content), 
+                            [], 
+                            "Non Empty response returned")
+                
 
 class manageAPITests(BaseTest):
     #Nothing is allowed without login credentials

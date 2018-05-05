@@ -23,3 +23,21 @@ class ContentManager(models.Manager):
                                 timezone.now()) & (Q(policy__end__gt=
                                 timezone.now()) | Q(policy__end__isnull=True)))
         return qs
+    
+    def get_pinned(self, publish_filter=False):
+        if not blog_settings.USE_POLICY:
+            from blogging.models import Content
+            return Content.objects.none()
+        
+        from blogging.models import Policy
+        
+        qs = super().get_queryset().filter(Q(policy__policy=
+                                Policy.PIN)& Q(policy__start__lte=
+                                timezone.now()) & (Q(policy__end__gt=
+                                timezone.now()) | Q(policy__end__isnull=True)))
+        if publish_filter:
+            qs = qs.filter(Q(policy__policy=
+                                Policy.PUBLISH)& Q(policy__start__lte=
+                                timezone.now()) & (Q(policy__end__gt=
+                                timezone.now()) | Q(policy__end__isnull=True)))
+        return qs
