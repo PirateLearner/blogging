@@ -11,8 +11,8 @@ typemap = {
             'Image'    : 'ImageField',
            }
 
-from blogging.models import Content
-reserved_keywords = [field.name for field in Content._meta.get_fields()]
+from blogging.models import AbstractContent
+reserved_keywords = [field.name for field in AbstractContent._meta.get_fields()]
 
 class CreateTemplate(object):
     """
@@ -67,14 +67,14 @@ class CreateTemplate(object):
         
     def create_model_imports(self):
         text = "\n"+"from django.db import models\n"
-        text += "from blogging.models import Content\n"
+        text += "from blogging.models import (AbstractContent, Content)\n"
         text += "import json\n"
         
         return text
     
     def create_model_block(self, indent=0):
         model_name = self.get_model_name(self.name)
-        text = "\n"+"class "+model_name+"(Content):\n"
+        text = "\n"+"class "+model_name+"(AbstractContent):\n"
         indent += 4
         text += " "*indent +\
                     "pid_count = models.PositiveIntegerField(blank=True)\n"

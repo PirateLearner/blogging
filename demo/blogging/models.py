@@ -9,7 +9,7 @@ from blogging.settings import blog_settings
 
 from blogging import managers
 
-class Content(models.Model):
+class AbstractContent(models.Model):
     """
     Model for a raw blog database entry.
     """
@@ -29,6 +29,14 @@ class Content(models.Model):
     # @todo : The last modified filed should be updated only when the data field
     # or title field changes.
     last_modified = models.DateTimeField("Last modified", auto_now = True)
+    
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        abstract = True
+
+class Content(AbstractContent):
     
     objects = managers.ContentManager()
     

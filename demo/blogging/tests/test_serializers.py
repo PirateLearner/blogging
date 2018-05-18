@@ -661,7 +661,7 @@ if blog_settings.USE_TEMPLATES:
                                      CreateTemplate.get_file_name(name)))
             
         
-        @skip("Testing")
+        #@skip("Testing")
         def test_create_entry_with_template(self):
             self.client.force_authenticate(user=self.user)
             
@@ -701,5 +701,5 @@ if blog_settings.USE_TEMPLATES:
             #print(json.loads(mod_obj.data))
             #mod_obj = model.objects.get(id=1)
             
-            #os.remove(CreateTemplate.get_full_file_path(
-            #                        CreateTemplate.get_file_name(name)))
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
