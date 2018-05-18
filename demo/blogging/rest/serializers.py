@@ -4,12 +4,20 @@ Created on 15-Mar-2018
 @author: anshul
 '''
 
-from blogging.models import Content, Policy
+from blogging.models import Content
+from blogging.settings import blog_settings
+
+if blog_settings.USE_POLICY:
+    from blogging.models import Policy
+
+if blog_settings.USE_TEMPLATES:
+    from blogging.models import Template
+    
 from rest_framework import serializers
 
 from django.contrib.auth.models import User
 from rest_framework.serializers import (HyperlinkedRelatedField,CharField)
-from blogging.settings import blog_settings
+
 from django.db import transaction
 
 from django.utils import timezone
@@ -150,3 +158,36 @@ class BulkAction(serializers.Serializer):
         return {'objects': object_ids,
                 'action' : action}
         
+if blog_settings.USE_TEMPLATES:
+    class TemplateSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Template
+            fields = ('id', 'name', 'fields', 'author')
+            extra_kwargs = {
+                                'author': {'required': False},
+                            }
+            
+        def is_valid(self):
+            '''
+            Validate the JSON is well formed.
+            Validate that the eventual filename that will be created does not 
+            already exist, and if it is an update, then it already exists. 
+            (How will we do that?):
+            - Have a field 'raw_name' in the file that contains the original
+              name that the user had asked for. If it is the same, then we are
+              updating.
+            '''
+            if serializers.ModelSerializer.is_valid(self):
+                import json
+                try:
+                    json.loads(self.validated_data.get('fields'))
+                except:
+                    self.errors['detail'] = "malformed JSON"
+                    return False
+                if self.instance is None:
+                    from blogging.factory import CreateTemplate as T
+                    if( T.file_exists(self.validated_data.get('name'))):
+                        self.errors['detail'] = "File already exists"
+                        return False
+                return True
+            return False

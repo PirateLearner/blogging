@@ -4,15 +4,18 @@ Created on 15-Mar-2018
 @author: anshul
 '''
 
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.response import Response
 from blogging.settings import blog_settings
 
 from blogging.models import Content
+
 if blog_settings.USE_POLICY:
     from blogging.models import Policy
+if blog_settings.USE_TEMPLATES:
+    from blogging.models import Template
 from blogging.rest.serializers import (ContentSerializer, ManageSerializer, 
-                                       BulkAction)
+                                       BulkAction, TemplateSerializer)
 
 from django.http import Http404
 
@@ -20,7 +23,7 @@ from rest_framework.decorators import (list_route,
                                        detail_route)
 
 from blogging.rest.permissions import IsAdminOrAuthor
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from django.db.models import Q
 from django.utils import timezone
@@ -183,3 +186,32 @@ class ManageView(viewsets.ViewSet):
     @detail_route(['post', 'put', 'patch', 'delete'])
     def publish(self, request, pk, format=None):
         pass
+    
+class TemplateView(viewsets.ModelViewSet):
+    serializer_class = TemplateSerializer
+    queryset = Template.objects.all()
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def create(self, request, format=None):
+        from blogging.factory import CreateTemplate
+        import json
+        serializer = TemplateSerializer(data=request.data, 
+                                       context={'request':request})
+        if serializer.is_valid():
+            #Create custom template class
+            template = CreateTemplate(name=serializer.validated_data.get('name'),
+                                      members = json.loads(serializer.validated_data.get('fields')))
+            template.save()
+            serializer.save(author = request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update(self, request, pk, format=None):
+        obj = self.get_object(pk)
+        serializer = TemplateSerializer(instance=obj, data=request.data, 
+                                       context={'request':request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

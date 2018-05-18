@@ -9,6 +9,8 @@ from blogging import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
+from blogging.settings import blog_settings
+from unittest.case import skip
 
 class BaseTest(TestCase):
 
@@ -222,228 +224,281 @@ class ContentModel(BaseTest):
                          "We are .", 
                          "Title is not as expected")
 
-from django.utils import timezone
-class PolicyModel(BaseTest):
+if blog_settings.USE_POLICY:
+    from django.utils import timezone
+    class PolicyModel(BaseTest):
+        
+        def _create_post(self, title, data, create_date=timezone.now()):
+            return models.Content.objects.create(title=title, 
+                                                 data=data, 
+                                                 author=self.user,
+                                                 create_date=create_date)
+            
+        def test_policy_create(self):
+            obj = self._create_post(title='Post 1', data='Some data')
+            policy_obj = models.Policy(entry=obj, policy = models.Policy.PUBLISH)
+            policy_obj.save()
+            
+            fetch_obj = models.Policy.objects.get(id=obj.id)
+            self.assertEqual(policy_obj, fetch_obj, "Objects are not the same")
+            
+        def test_policy_publish_with_publish_date(self):
+            obj = []
+            obj.append(self._create_post(title='Post 1', data='Some data'))
+            
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=timezone.now())
+                policy_obj.save()
     
-    def _create_post(self, title, data, create_date=timezone.now()):
-        return models.Content.objects.create(title=title, 
-                                             data=data, 
-                                             author=self.user,
-                                             create_date=create_date)
-        
-    def test_policy_create(self):
-        obj = self._create_post(title='Post 1', data='Some data')
-        policy_obj = models.Policy(entry=obj, policy = models.Policy.PUBLISH)
-        policy_obj.save()
-        
-        fetch_obj = models.Policy.objects.get(id=obj.id)
-        self.assertEqual(policy_obj, fetch_obj, "Objects are not the same")
-        
-    def test_policy_publish_with_publish_date(self):
-        obj = []
-        obj.append(self._create_post(title='Post 1', data='Some data'))
-        
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PUBLISH,
-                                       start=timezone.now())
-            policy_obj.save()
-
-        qs = models.Content.objects.get_published()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
-        
-        for entry in obj:
-            self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))
+            qs = models.Content.objects.get_published()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
             
-    def test_policy_publish_with_publish_date_in_future(self):
-        import datetime
-        obj = []
-        obj.append(self._create_post(title='Post 1', data='Some data'))
-        
-        now = timezone.now()
-        start = timezone.datetime.combine(datetime.date(now.year, 
-                                                        now.month, 
-                                                        now.day+1),
-                                          datetime.time(now.hour,
-                                                        now.minute))
-        start = timezone.make_aware(start)
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PUBLISH,
-                                       start=start)
-            policy_obj.save()
-
-        qs = models.Content.objects.get_published()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
-        
-        for entry in obj:
-            self.assertNotIn(entry, returned_objs, "{o} not found".format(o=entry))
+            for entry in obj:
+                self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))
+                
+        def test_policy_publish_with_publish_date_in_future(self):
+            import datetime
+            obj = []
+            obj.append(self._create_post(title='Post 1', data='Some data'))
             
-    def test_policy_publish_with_unpublish_date_in_past(self):
-        import datetime
-        obj = []
-        
-        now = timezone.now()
-        create_date = timezone.datetime.combine(datetime.date(now.year, 
-                                                        now.month, 
-                                        (now.day-2) if (now.day -2) > 0 else 1),
-                                          datetime.time(now.hour,
-                                                        now.minute))
-        create_date = timezone.make_aware(create_date)
-        obj.append(self._create_post(title='Post 1', data='Some data',
-                                     create_date = create_date))
-        
-        start = create_date
-        stop = timezone.datetime.combine(datetime.date(now.year, 
-                                                        now.month, 
-                                                        now.day-1),
-                                          datetime.time(now.hour,
-                                                        now.minute))
-        stop = timezone.make_aware(stop)
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PUBLISH,
-                                       start=start,
-                                       end = stop)
-            policy_obj.save()
-
-        qs = models.Content.objects.get_published()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
-        
-        for entry in obj:
-            self.assertNotIn(entry, returned_objs, "{o} not found".format(o=entry))
+            now = timezone.now()
+            start = timezone.datetime.combine(datetime.date(now.year, 
+                                                            now.month, 
+                                                            now.day+1),
+                                              datetime.time(now.hour,
+                                                            now.minute))
+            start = timezone.make_aware(start)
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=start)
+                policy_obj.save()
+    
+            qs = models.Content.objects.get_published()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
             
-        self.assertEqual(len(qs), 0, "Non-empty queryset returned!")
-        
-    def test_policy_publish_with_1_publish_1_unpublish_date_in_past(self):
-        import datetime
-        obj = []
-        
-        now = timezone.now()
-        create_date = timezone.datetime.combine(datetime.date(now.year, 
-                                                        now.month, 
-                                        (now.day-2) if (now.day -2) > 0 else 1),
-                                          datetime.time(now.hour,
-                                                        now.minute))
-        create_date = timezone.make_aware(create_date)
-        obj.append(self._create_post(title='Post 1', data='Some data',
-                                     create_date = create_date))
-        
-        start = create_date
-        stop = timezone.datetime.combine(datetime.date(now.year, 
-                                                        now.month, 
-                                                        now.day-1),
-                                          datetime.time(now.hour,
-                                                        now.minute))
-        stop = timezone.make_aware(stop)
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PUBLISH,
-                                       start=start,
-                                       end = stop)
-            policy_obj.save()
-
-        obj.append(self._create_post(title='Post 2', data='Some other data',
-                                     create_date = create_date))
-        
-        policy_obj = models.Policy(entry=obj[-1], 
-                                   policy = models.Policy.PUBLISH,
-                                   start=create_date)
-        policy_obj.save()
+            for entry in obj:
+                self.assertNotIn(entry, returned_objs, "{o} not found".format(o=entry))
+                
+        def test_policy_publish_with_unpublish_date_in_past(self):
+            import datetime
+            obj = []
             
-        qs = models.Content.objects.get_published()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
-        
-        self.assertIn(obj[-1], 
-                      returned_objs, 
-                      "{o} not in list when it should be".format(o=obj[-1]))
-        self.assertNotIn(obj[0], 
-                      returned_objs, 
-                      "{o} not in list when it should be".format(o=obj[0]))
-        
-    def test_policy_deletion_on_content_delete(self):
-        obj = self._create_post(title='Post 1', data='Some data')
-        policy_obj = models.Policy(entry=obj, 
-                                   policy = models.Policy.PUBLISH)
-        policy_obj.save()
-        obj.delete()
-        
-        query_set = models.Content.objects.all()
-        self.assertEqual(len(query_set), 
-                         0, 
-                         "Content table not empty")
-        query_set = models.Policy.objects.all()
-        self.assertEqual(len(query_set), 
-                         0, 
-                         "Policy table not empty")
-        
-    def test_policy_edit(self):
-        obj = self._create_post(title='Post 1', data='Some data')
-        policy_obj = models.Policy(entry=obj, 
-                                   policy = models.Policy.PUBLISH)
-        policy_obj.save()
-        
-        qs = models.Content.objects.get_published()
-        self.assertEqual(len(qs), 0, "Query set must be of 0 length.")
-        
-        policy_obj.start = timezone.now()
-        policy_obj.save()
-        
-        qs = models.Content.objects.get_published()
-        self.assertEqual(len(qs), 1, "Query set must contain 1 entry.")
-        
-    def test_policy_publish_and_pin(self):
-        obj = []
-        obj.append(self._create_post(title='Post 1', data='Some data'))
-        
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PUBLISH,
-                                       start=timezone.now())
-            policy_obj.save()
-            policy_obj = models.Policy(entry=entry, 
-                                       policy = models.Policy.PIN,
-                                       start=timezone.now())
-            policy_obj.save()
-
-        qs = models.Content.objects.get_pinned()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
-        
-        for entry in obj:
-            self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))
+            now = timezone.now()
+            create_date = timezone.datetime.combine(datetime.date(now.year, 
+                                                            now.month, 
+                                            (now.day-2) if (now.day -2) > 0 else 1),
+                                              datetime.time(now.hour,
+                                                            now.minute))
+            create_date = timezone.make_aware(create_date)
+            obj.append(self._create_post(title='Post 1', data='Some data',
+                                         create_date = create_date))
             
-    def test_policy_multiple_publish_and_single_pin(self):
-        obj = []
-        obj.append(self._create_post(title='Post 1', data='Some data'))
-        obj.append(self._create_post(title='Post 2', data='Some data again'))
-        
-        for entry in obj:
-            policy_obj = models.Policy(entry=entry, 
+            start = create_date
+            stop = timezone.datetime.combine(datetime.date(now.year, 
+                                                            now.month, 
+                                                            now.day-1),
+                                              datetime.time(now.hour,
+                                                            now.minute))
+            stop = timezone.make_aware(stop)
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=start,
+                                           end = stop)
+                policy_obj.save()
+    
+            qs = models.Content.objects.get_published()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
+            
+            for entry in obj:
+                self.assertNotIn(entry, returned_objs, "{o} not found".format(o=entry))
+                
+            self.assertEqual(len(qs), 0, "Non-empty queryset returned!")
+            
+        def test_policy_publish_with_1_publish_1_unpublish_date_in_past(self):
+            import datetime
+            obj = []
+            
+            now = timezone.now()
+            create_date = timezone.datetime.combine(datetime.date(now.year, 
+                                                            now.month, 
+                                            (now.day-2) if (now.day -2) > 0 else 1),
+                                              datetime.time(now.hour,
+                                                            now.minute))
+            create_date = timezone.make_aware(create_date)
+            obj.append(self._create_post(title='Post 1', data='Some data',
+                                         create_date = create_date))
+            
+            start = create_date
+            stop = timezone.datetime.combine(datetime.date(now.year, 
+                                                            now.month, 
+                                                            now.day-1),
+                                              datetime.time(now.hour,
+                                                            now.minute))
+            stop = timezone.make_aware(stop)
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=start,
+                                           end = stop)
+                policy_obj.save()
+    
+            obj.append(self._create_post(title='Post 2', data='Some other data',
+                                         create_date = create_date))
+            
+            policy_obj = models.Policy(entry=obj[-1], 
                                        policy = models.Policy.PUBLISH,
-                                       start=timezone.now())
+                                       start=create_date)
             policy_obj.save()
-
-        entry = obj[0]
-        policy_obj = models.Policy(entry=entry, 
-                           policy = models.Policy.PIN,
-                           start=timezone.now())
-        policy_obj.save()
-
-        qs = models.Content.objects.get_pinned()
-        returned_objs = []
-        for entry in qs:
-            returned_objs.append(entry)
+                
+            qs = models.Content.objects.get_published()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
+            
+            self.assertIn(obj[-1], 
+                          returned_objs, 
+                          "{o} not in list when it should be".format(o=obj[-1]))
+            self.assertNotIn(obj[0], 
+                          returned_objs, 
+                          "{o} not in list when it should be".format(o=obj[0]))
+            
+        def test_policy_deletion_on_content_delete(self):
+            obj = self._create_post(title='Post 1', data='Some data')
+            policy_obj = models.Policy(entry=obj, 
+                                       policy = models.Policy.PUBLISH)
+            policy_obj.save()
+            obj.delete()
+            
+            query_set = models.Content.objects.all()
+            self.assertEqual(len(query_set), 
+                             0, 
+                             "Content table not empty")
+            query_set = models.Policy.objects.all()
+            self.assertEqual(len(query_set), 
+                             0, 
+                             "Policy table not empty")
+            
+        def test_policy_edit(self):
+            obj = self._create_post(title='Post 1', data='Some data')
+            policy_obj = models.Policy(entry=obj, 
+                                       policy = models.Policy.PUBLISH)
+            policy_obj.save()
+            
+            qs = models.Content.objects.get_published()
+            self.assertEqual(len(qs), 0, "Query set must be of 0 length.")
+            
+            policy_obj.start = timezone.now()
+            policy_obj.save()
+            
+            qs = models.Content.objects.get_published()
+            self.assertEqual(len(qs), 1, "Query set must contain 1 entry.")
+            
+        def test_policy_publish_and_pin(self):
+            obj = []
+            obj.append(self._create_post(title='Post 1', data='Some data'))
+            
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=timezone.now())
+                policy_obj.save()
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PIN,
+                                           start=timezone.now())
+                policy_obj.save()
+    
+            qs = models.Content.objects.get_pinned()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
+            
+            for entry in obj:
+                self.assertIn(entry, returned_objs, "{o} not found".format(o=entry))
+                
+        def test_policy_multiple_publish_and_single_pin(self):
+            obj = []
+            obj.append(self._create_post(title='Post 1', data='Some data'))
+            obj.append(self._create_post(title='Post 2', data='Some data again'))
+            
+            for entry in obj:
+                policy_obj = models.Policy(entry=entry, 
+                                           policy = models.Policy.PUBLISH,
+                                           start=timezone.now())
+                policy_obj.save()
+    
+            entry = obj[0]
+            policy_obj = models.Policy(entry=entry, 
+                               policy = models.Policy.PIN,
+                               start=timezone.now())
+            policy_obj.save()
+    
+            qs = models.Content.objects.get_pinned()
+            returned_objs = []
+            for entry in qs:
+                returned_objs.append(entry)
+            
+            self.assertNotIn(obj[1], returned_objs, 
+                             "{o} must not be present in Pinned Posts".format(o = obj[1]))
+            
+if blog_settings.USE_TEMPLATES:
+    import json
+    class TemplateTests(BaseTest):
+        def test_create_blog_template(self):
+            obj = models.Template()
+            obj.name = "Blog"
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            obj.fields = json.dumps(layout)
+            
+            obj.save()
+            self.assertNotEqual(obj.id, 0, "A non-zero ID must have been assigned.")
+            
+        def test_create_with_bad_structure_asserts(self):
+            obj = models.Template()
+            obj.name = "Blog"
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            obj.fields = layout
+            
+            self.assertRaises(ValidationError, obj.save, None)
         
-        self.assertNotIn(obj[1], returned_objs, 
-                         "{o} must not be present in Pinned Posts".format(o = obj[1]))
+        @skip("Just informational prodding")
+        def test_when_is_init_called(self):
+            obj = models.Template()
+            obj.name = "Blog"
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            obj.fields = json.dumps(layout)
+            
+            obj.save()
+            
+            new_obj = models.Template.objects.get(id=1)
+            
+            
+    class TemplateMapTests(BaseTest):
+        def test_create_template_map(self):
+            layout = [{'title': {'type': 'CharField',
+                                 'extra': {'max_length': 100}}}]
+            template = models.Template.objects.create(name = "Blog",
+                                              fields = json.dumps(layout))
+            content = models.Content.objects.create(author=self.user,
+                                                title="Test Post",
+                                                data = "We are entering some"+
+                                                     "test data into this to"+
+                                                     "test creation."
+                                                )
+            map = models.TemplateMap(content=content, template = template)
+            map.save()
+            self.assertNotEqual(map.id, 0, 
+                                "A non-zero ID must have been assigned.")
         

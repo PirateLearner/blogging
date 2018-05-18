@@ -8,6 +8,7 @@ from django.test.signals import setting_changed
 
 DEFAULTS = {
     'USE_POLICY': True,
+    'USE_TEMPLATES': True,
     }
 
 class BlogSettings(object):

@@ -16,6 +16,7 @@ from rest_framework.request import Request
 from rest_framework import status
 from unittest import skip
 from blogging.models import Policy
+from blogging.factory import CreateTemplate
 
 class BaseTest(APITestCase):
     def setUp(self):
@@ -582,3 +583,123 @@ class detailAPITests(BaseTest):
     def test_edit_content_with_policy(self):
         pass
     
+
+from blogging.settings import blog_settings
+
+if blog_settings.USE_TEMPLATES:
+    from blogging.rest.serializers import TemplateSerializer
+    from blogging.models import Template, TemplateMap
+    import os
+    
+    class TestTemplates(BaseTest):
+        
+        def test_create_new_template(self):
+            
+            self.client.force_authenticate(user=self.user)
+            
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            
+            response = self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            response.render() #Must be called before anything happens
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=status.HTTP_201_CREATED)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "Only one DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+            
+            os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
+        
+        def test_create_duplicate_template_fails(self):
+            self.client.force_authenticate(user=self.user)
+            
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            
+            response = self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                                 {'body' : {'type': 'TextField',
+                                            'extra': None
+                                            }
+                                  }]
+            
+            response = self.client.post('/rest/content/template/', 
+                                        {'name':'blogging',
+                                         'fields': json.dumps(layout),
+                                         })
+            response.render() #Must be called before anything happens
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=status.HTTP_400_BAD_REQUEST)
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "Only one DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, 
+                                    name, "Improper name saved in DB")
+                
+            os.remove(CreateTemplate.get_full_file_path(
+                                     CreateTemplate.get_file_name(name)))
+            
+        
+        @skip("Testing")
+        def test_create_entry_with_template(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            
+            #Created. Now load
+            from importlib import import_module
+            module = import_module(module_name)
+            
+            serializer_name = CreateTemplate.get_serializer_name(name)
+            model_name = CreateTemplate.get_model_name(name)
+            
+            serializer = getattr(module, serializer_name)
+            model = getattr(module, model_name)
+            
+            #Loaded, now try to create
+            ser_obj = serializer(data = {'title': 'Test Post',
+                                        'body': 'This is a test post!'})
+            
+            if ser_obj.is_valid():
+                ser_obj.save(author=self.user)
+            
+            mod_obj = models.Content.objects.get(id=1)
+            #print(json.loads(mod_obj.data))
+            #mod_obj = model.objects.get(id=1)
+            
+            #os.remove(CreateTemplate.get_full_file_path(
+            #                        CreateTemplate.get_file_name(name)))

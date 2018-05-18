@@ -103,3 +103,37 @@ if blog_settings.USE_POLICY:
                 if self.end is None or self.end > timezone.now():
                     return True
             return False
+
+if blog_settings.USE_TEMPLATES is True:
+    class Template(models.Model):
+        name = models.CharField(max_length=15,
+                                blank = False,
+                                null = False)
+        fields = models.TextField()
+        author = models.ForeignKey(User,
+                                   null = True,
+                                   on_delete = models.SET_NULL,
+                                   related_name="template")
+            
+        def save(self, *args, **kwargs):
+            '''
+            Ensure that the fields are saved as a valid JSON.
+            '''
+            import json
+            try:
+                layout = json.loads(self.fields)
+                #Do something with this and generate the appropriate file
+                super(Template, self).save(*args, **kwargs)
+            except:
+                raise ValidationError("Check JSON validity (are you passing a"+
+                                      " dict, or a string?")
+        
+    class TemplateMap(models.Model):
+        content = models.ForeignKey(Content, 
+                                  related_name="mapped", 
+                                  on_delete = models.CASCADE)
+        template = models.ForeignKey(Template,
+                                     default=1,
+                                     on_delete=models.SET_DEFAULT)
+        
+        

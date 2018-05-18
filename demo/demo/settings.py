@@ -139,4 +139,5 @@ REST_FRAMEWORK = {
 
 BLOGGING = {
         'USE_POLICY': True,
+        'USE_TEMPLATES': True,
     }
