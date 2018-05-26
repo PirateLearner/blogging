@@ -22,6 +22,41 @@ from django.db import transaction
 
 from django.utils import timezone
 
+
+if blog_settings.USE_TEMPLATES:
+    class TemplateSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Template
+            fields = ('id', 'name', 'fields', 'author')
+            extra_kwargs = {
+                                'author': {'required': False},
+                            }
+            
+        def is_valid(self):
+            '''
+            Validate the JSON is well formed.
+            Validate that the eventual filename that will be created does not 
+            already exist, and if it is an update, then it already exists. 
+            (How will we do that?):
+            - Have a field 'raw_name' in the file that contains the original
+              name that the user had asked for. If it is the same, then we are
+              updating.
+            '''
+            if serializers.ModelSerializer.is_valid(self):
+                import json
+                try:
+                    json.loads(self.validated_data.get('fields'))
+                except:
+                    self.errors['detail'] = "malformed JSON"
+                    return False
+                if self.instance is None:
+                    from blogging.factory import CreateTemplate as T
+                    if( T.file_exists(self.validated_data.get('name'))):
+                        self.errors['detail'] = "File already exists"
+                        return False
+                return True
+            return False
+
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
                                      view_name='user-detail',
@@ -74,18 +109,21 @@ if blog_settings.USE_POLICY:
     
     class ManageSerializer(ContentSerializer):
         policy = PolicySerializer(many=True)
-        
+        template = serializers.PrimaryKeyRelatedField(queryset = 
+                                                      Template.objects.all(),
+                                                      required=False)
         class Meta:
             model = Content
             fields = ('url', 'id', 'title', 'data', 'author', 'create_date', 
-                      'last_modified', 'policy')
+                      'last_modified', 'policy', 'template')
             extra_kwargs = {'url': {'view_name':'content/manage-detail'},
                             'title': {'max_length': 100,
                                       'required': False},
                             }
             
         def create(self, validated_data):
-            policy_data = validated_data.pop('policy')
+            policy_data = validated_data.pop('policy', None)
+            template = validated_data.pop('template', None)
             with transaction.atomic():
                 entry = Content.objects.create(**validated_data)
                 for policy in policy_data:
@@ -93,7 +131,8 @@ if blog_settings.USE_POLICY:
             return entry
         
         def update(self, instance, validated_data):
-            policy_data = validated_data.pop('policy')
+            policy_data = validated_data.pop('policy', None)
+            template = validated_data.pop('template', None)
             instance.title = validated_data.get('title', instance.title)
             instance.data = validated_data.get('data', instance.data)
             with transaction.atomic():
@@ -158,36 +197,3 @@ class BulkAction(serializers.Serializer):
         return {'objects': object_ids,
                 'action' : action}
         
-if blog_settings.USE_TEMPLATES:
-    class TemplateSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Template
-            fields = ('id', 'name', 'fields', 'author')
-            extra_kwargs = {
-                                'author': {'required': False},
-                            }
-            
-        def is_valid(self):
-            '''
-            Validate the JSON is well formed.
-            Validate that the eventual filename that will be created does not 
-            already exist, and if it is an update, then it already exists. 
-            (How will we do that?):
-            - Have a field 'raw_name' in the file that contains the original
-              name that the user had asked for. If it is the same, then we are
-              updating.
-            '''
-            if serializers.ModelSerializer.is_valid(self):
-                import json
-                try:
-                    json.loads(self.validated_data.get('fields'))
-                except:
-                    self.errors['detail'] = "malformed JSON"
-                    return False
-                if self.instance is None:
-                    from blogging.factory import CreateTemplate as T
-                    if( T.file_exists(self.validated_data.get('name'))):
-                        self.errors['detail'] = "File already exists"
-                        return False
-                return True
-            return False

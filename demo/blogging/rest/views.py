@@ -28,6 +28,8 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from django.db.models import Q
 from django.utils import timezone
 
+from blogging.factory import CreateTemplate
+from importlib import import_module
 
 class ContentView(viewsets.ViewSet):
     http_method_names = ['get', 'head']
@@ -138,7 +140,22 @@ class ManageView(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def create(self, request, format=None):
-        serializer = ManageSerializer(data=request.data, 
+        template_id = request.data.get('template', None)
+        if template_id is not None:
+            try:
+                template = Template.objects.get(id=template_id).name
+                serializer_name = CreateTemplate.get_manage_serializer_name(template)
+                
+                module = import_module('blogging.custom.'+\
+                            CreateTemplate.get_file_name(template))
+                serializer_obj = getattr(module, serializer_name)
+                serializer = serializer_obj(data=request.data, 
+                                       context={'request':request})
+            except:
+                return Response({'detail': "Template not found"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = ManageSerializer(data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save(author=request.user)
@@ -153,13 +170,31 @@ class ManageView(viewsets.ViewSet):
         
     def retrieve(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ManageSerializer(instance=obj, 
+        
+        try:
+            template = obj.mapped.name
+            serializer_name = CreateTemplate.get_manage_serializer_name(template)
+            module = import_module(template)
+            serializer_obj = getattr(module, serializer_name)
+            serializer = serializer_obj(data=request.data, 
+                                       context={'request':request})
+        except:
+            serializer = ManageSerializer(instance=obj, 
                                        context={'request':request})
         return Response(serializer.data)
         
     def update(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ManageSerializer(instance=obj, data=request.data, 
+        try:
+            template = obj.mapped.name
+            serializer_name = CreateTemplate.get_manage_serializer_name(template)
+            module = import_module(template)
+            serializer_obj = getattr(module, serializer_name)
+            serializer = serializer_obj(instance=obj,
+                                        data=request.data, 
+                                       context={'request':request})
+        except:        
+            serializer = ManageSerializer(instance=obj, data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save()

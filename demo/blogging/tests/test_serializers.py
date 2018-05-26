@@ -593,13 +593,26 @@ if blog_settings.USE_TEMPLATES:
     
     class TestTemplates(BaseTest):
         
+        def tearDown(self):
+            BaseTest.tearDown(self)
+            
+            if(CreateTemplate.file_exists('Blogging')):
+                #pass
+                os.remove(CreateTemplate.get_full_file_path(
+                                     CreateTemplate.get_file_name("Blogging")))
+        
         def test_create_new_template(self):
             
             self.client.force_authenticate(user=self.user)
             
             name = 'Blogging'
             layout = [{'title': {'type': 'CharField',
-                                     'extra': {'max_length': 100}}}]
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
             
             response = self.client.post('/rest/content/template/', 
                                         {'name':name,
@@ -684,7 +697,7 @@ if blog_settings.USE_TEMPLATES:
             from importlib import import_module
             module = import_module(module_name)
             
-            serializer_name = CreateTemplate.get_serializer_name(name)
+            serializer_name = CreateTemplate.get_manage_serializer_name(name)
             model_name = CreateTemplate.get_model_name(name)
             
             serializer = getattr(module, serializer_name)
@@ -692,14 +705,48 @@ if blog_settings.USE_TEMPLATES:
             
             #Loaded, now try to create
             ser_obj = serializer(data = {'title': 'Test Post',
-                                        'body': 'This is a test post!'})
+                                        'body': 'This is a test post!',
+                                        'policy': [{'policy': 'PUB'}]})
             
             if ser_obj.is_valid():
                 ser_obj.save(author=self.user)
             
+            #print(ser_obj.errors)
+            
             mod_obj = models.Content.objects.get(id=1)
             #print(json.loads(mod_obj.data))
             #mod_obj = model.objects.get(id=1)
-            
+            self.assertNotEqual(mod_obj, None, "No object returned")
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
+        
+        #@skip('Developing')
+        def test_create_entry_with_template_from_client(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            
+            response = self.client.post('/rest/content/manage/', 
+                                        {'title':'Test Post',
+                                         'body': 'Data in test post',
+                                         'template': 1,
+                                        'policy': [{'policy': 'PUB'}]})
+            response.render() #Must be called before anything happens
+            print(response.content)
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=status.HTTP_201_CREATED)
