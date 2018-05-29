@@ -18,9 +18,9 @@ from unittest import skip
 from django.shortcuts import render
 
 class BaseTest(TestCase):
-    def _create_post(self, title, data, author=None):
+    def _create_post(self, title, text, author=None):
         return models.Content.objects.create(title=title, 
-                                             data=data, 
+                                             text=text, 
                                              author=author if author is not None else self.user)
         
     def _create_policy(self, content, policy, start=None, stop=None):
@@ -74,13 +74,13 @@ class IndexView(BaseTest):
     def test_get_non_empty_content_list(self):
         from django.utils import timezone
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2")
+                                    text="This is post number 2")
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
@@ -102,13 +102,13 @@ class PolicyTests(BaseTest):
     def test_get_1_published_1_non_published_content_list(self):
         from django.utils import timezone
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2")
+                                    text="This is post number 2")
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=None, 
@@ -128,13 +128,13 @@ class PolicyTests(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
@@ -154,7 +154,7 @@ class PolicyTests(BaseTest):
     def test_get_pinned_posts(self):
         from django.utils import timezone
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         publish_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
@@ -164,7 +164,7 @@ class PolicyTests(BaseTest):
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2")
+                                    text="This is post number 2")
         publish_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
@@ -185,13 +185,13 @@ class PolicyTests(BaseTest):
     def test_get_published_with_pinned_has_no_repetitions(self):
         from django.utils import timezone
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2")
+                                    text="This is post number 2")
         publish_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         publish_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
@@ -245,8 +245,8 @@ class ManageView(BaseTest):
                             status_code=200)
 
     def test_get_non_empty_content_list(self):
-        self._create_post(title="Post 1", data="This is post number 1")
-        self._create_post(title="Post 2", data="This is post number 2")
+        self._create_post(title="Post 1", text="This is post number 1")
+        self._create_post(title="Post 2", text="This is post number 2")
         request = HttpRequest()
         request.user = self.user
         response = views.manage(request)
@@ -266,13 +266,13 @@ class ManageView(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
@@ -296,13 +296,13 @@ class ManageView(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
@@ -327,20 +327,20 @@ class ManageView(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=None, 
                                      stop=None)
         entry_3 = self._create_post(title="Post 3", 
-                                    data="This is post number 3")
+                                    text="This is post number 3")
         policy_3 = self._create_policy(entry_3, 
                                      models.Policy.PUBLISH, 
                                      start=None, 
@@ -366,20 +366,20 @@ class ManageView(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_3 = self._create_post(title="Post 3", 
-                                    data="This is post number 3")
+                                    text="This is post number 3")
         
         request = HttpRequest()
         request.GET['published']= ''
@@ -402,20 +402,20 @@ class ManageView(BaseTest):
                                            email="tester2@testing.co",
                                            password=self.password)
         entry_1 = self._create_post(title="Post 1", 
-                                    data="This is post number 1")
+                                    text="This is post number 1")
         policy_1 = self._create_policy(entry_1, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_2 = self._create_post(title="Post 2", 
-                                    data="This is post number 2",
+                                    text="This is post number 2",
                                     author = user)
         policy_2 = self._create_policy(entry_2, 
                                      models.Policy.PUBLISH, 
                                      start=timezone.now(), 
                                      stop=None)
         entry_3 = self._create_post(title="Post 3", 
-                                    data="This is post number 3")
+                                    text="This is post number 3")
         
         request = HttpRequest()
         request.GET['author']= 'tester2'
@@ -441,7 +441,7 @@ class DetailView(BaseTest):
         self.assertRaises(Http404, views.detail, request, blog_id=1)
         
     def test_get_valid_detail_page(self):
-        obj = self._create_post(title="Post 1", data="This is post number 1")
+        obj = self._create_post(title="Post 1", text="This is post number 1")
 #         html="<div>"+\
 #              "<h1>Post 1</h1>"+\
 #              "<div><span>Created on "+ obj.create_date.strftime("%B %d, %Y, %-H:%M %p")+\
@@ -449,6 +449,7 @@ class DetailView(BaseTest):
 #              "<p>This is post number 1</p></div>"
         request = HttpRequest()
         response = views.detail(request, blog_id=1)
+        #print (response.content)
         self.assertContains(response=response, 
                             text="This is post number 1",
                             #text= html, 
@@ -490,7 +491,7 @@ class EditView(BaseTest):
     def test_post_without_login_gives_error(self):
         response = self.client.post('/blogging/edit/',
                                     data={'title':"This is a test post",
-                                          'data': 'These are the post contents',
+                                          'text': 'These are the post contents',
                                           'Save':'Save',
                                           }) #Follow redirect
         #It redirects to login page instead of giving a permissions error
@@ -505,7 +506,7 @@ class EditView(BaseTest):
                                           "Login not successful")
         response = self.client.post('/blogging/edit/',
                                     data={'title':"This is a test post",
-                                          'data': 'These are the post contents',
+                                          'text': 'These are the post contents',
                                           'Save':'Save',
                                           },
                                     follow=True) #Follow redirect
@@ -526,7 +527,7 @@ class EditView(BaseTest):
                                           "Login not successful")
         response = self.client.post('/blogging/edit/',
                                     data={'title':"This is a test post",
-                                          'data': 'These are the post contents',
+                                          'text': 'These are the post contents',
                                           'Publish':'Publish',
                                           },
                                     follow=True) #Follow redirect
@@ -544,7 +545,7 @@ class EditView(BaseTest):
                             html=True)
         
     def test_get_already_created_post_form(self):
-        obj = self._create_post(title="Post Edit 1", data="Content of post 1")
+        obj = self._create_post(title="Post Edit 1", text="Content of post 1")
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
@@ -561,13 +562,13 @@ class EditView(BaseTest):
                             html=False)
 
     def test_edit_already_created_post(self):
-        obj = self._create_post(title="Post Edit 1", data="Content of post 1")
+        obj = self._create_post(title="Post Edit 1", text="Content of post 1")
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
         response = self.client.post('/blogging/{blog}/edit/'.format(blog=obj.id),
                                     data={'title':"Altered title",
-                                          'data': 'Altered data',
+                                          'text': 'Altered data',
                                           'Save': 'Save'},
                                           follow = True)
         self.assertNotContains(response, 
@@ -588,7 +589,7 @@ class EditView(BaseTest):
                             html=False)
         
     def test_delete_post(self):
-        obj = self._create_post(title="Post Edit 1", data="Content of post 1")
+        obj = self._create_post(title="Post Edit 1", text="Content of post 1")
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
@@ -605,22 +606,22 @@ class EditView(BaseTest):
                                           "Login not successful")
         response = self.client.post('/blogging/edit/',
                                     data={'title':'',
-                                          'data': '',
+                                          'text': '',
                                           'Publish':'Publish',
                                           },
                                     follow=True) #Follow redirect
         self.assertContains(response, 
                             text="Either title or content must be non-empty", 
                             count=1, 
-                            status_code=200)
+                            status_code=400)
     
-    def test_post_without_title_with_data(self):
+    def test_post_without_title_with_text(self):
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
         response = self.client.post('/blogging/edit/',
                                     data={'title':'',
-                                          'data': 'Some data is present',
+                                          'text': 'Some data is present',
                                           'Publish':'Publish',
                                           },
                                     follow=True) #Follow redirect
@@ -629,13 +630,13 @@ class EditView(BaseTest):
                             count=2, 
                             status_code=200)
         
-    def test_post_with_title_without_data(self):
+    def test_post_with_title_without_text(self):
         self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
         response = self.client.post('/blogging/edit/',
                                     data={'title':'Contains title',
-                                          'data': '',
+                                          'text': '',
                                           'Publish':'Publish',
                                           },
                                     follow=True) #Follow redirect

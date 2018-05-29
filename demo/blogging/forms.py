@@ -8,15 +8,15 @@ from blogging.models import Content
 
 class ContentForm(forms.ModelForm):
     title = forms.CharField(required = False)
-    data = forms.CharField(required = False, widget=forms.Textarea)
+    text = forms.CharField(required = False, widget=forms.Textarea)
     
     class Meta:
         model = Content
-        fields = ['title', 'data']
+        fields = ['title', 'text']
         
     def is_valid(self):
         if (forms.ModelForm.is_valid(self)):
-            if len(self.cleaned_data['title']) is 0 and len(self.cleaned_data['data']) is 0:
+            if len(self.cleaned_data['title']) is 0 and len(self.cleaned_data['text']) is 0:
                 self.errors['title'] = ['Either title or content must be non-empty']
                 return False
             return True

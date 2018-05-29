@@ -42,7 +42,7 @@ if blog_settings.USE_TEMPLATES:
               name that the user had asked for. If it is the same, then we are
               updating.
             '''
-            if serializers.ModelSerializer.is_valid(self):
+            if super(serializers.ModelSerializer, self).is_valid(self):
                 import json
                 try:
                     json.loads(self.validated_data.get('fields'))
@@ -61,11 +61,12 @@ class ContentSerializer(serializers.HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
                                      view_name='user-detail',
                                      required = False)
-    data = CharField(style={'base_template': 'textarea.html'}, required=False)
+    text = CharField(style={'base_template': 'textarea.html'}, required=False)
     class Meta:
         model = Content
-        fields = ('url', 'id', 'title', 'data', 'author', 
-                  'create_date', 'last_modified')
+        #fields = ('url', 'id', 'title', 'text', 'author', 
+        #          'create_date', 'last_modified')
+        exclude = ('is_active',)
         extra_kwargs = {'title': {'max_length': 100,
                                   'required': False},
                         }
@@ -77,11 +78,11 @@ class ContentSerializer(serializers.HyperlinkedModelSerializer):
             #Perform this check only on new creations
             if self.instance is None:
                 if (self._validated_data.get('title',None) is None \
-                   and self._validated_data.get('data', None) is None) or \
+                   and self._validated_data.get('text', None) is None) or \
                    (self._validated_data.get('title',None) is not None \
-                   and self._validated_data.get('data', None) is not None and \
+                   and self._validated_data.get('text', None) is not None and \
                    len(self._validated_data.get('title').strip()) == 0 and \
-                   len(self._validated_data.get('data').strip()) == 0):
+                   len(self._validated_data.get('text').strip()) == 0):
                     self.errors['detail'] = ['Either title or content must be non-empty']
                     return False
                 return True
@@ -90,9 +91,9 @@ class ContentSerializer(serializers.HyperlinkedModelSerializer):
                 # fields may not be updated. But text must not be empty if they
                 # are non-empty
                 if (self._validated_data.get('title',None) is not None \
-                   and self._validated_data.get('data', None) is not None and \
+                   and self._validated_data.get('text', None) is not None and \
                    len(self._validated_data.get('title').strip()) == 0 and \
-                   len(self._validated_data.get('data').strip()) == 0):
+                   len(self._validated_data.get('text').strip()) == 0):
                     self.errors['detail'] = ['Either title or content must be non-empty']
                     return False
                 return True
@@ -109,32 +110,37 @@ if blog_settings.USE_POLICY:
     
     class ManageSerializer(ContentSerializer):
         policy = PolicySerializer(many=True)
+        #policy = serializers.PrimaryKeyRelatedField(queryset = Policy.objects.all(),
+        #                                            many = True)
         template = serializers.PrimaryKeyRelatedField(queryset = 
                                                       Template.objects.all(),
-                                                      required=False)
+                                                      required = False)
         class Meta:
             model = Content
-            fields = ('url', 'id', 'title', 'data', 'author', 'create_date', 
-                      'last_modified', 'policy', 'template')
+            exclude = ('is_active',)
             extra_kwargs = {'url': {'view_name':'content/manage-detail'},
                             'title': {'max_length': 100,
                                       'required': False},
+                            'policy': {'required': False},
                             }
-            
+
         def create(self, validated_data):
             policy_data = validated_data.pop('policy', None)
-            template = validated_data.pop('template', None)
             with transaction.atomic():
                 entry = Content.objects.create(**validated_data)
                 for policy in policy_data:
-                    Policy.objects.create(entry=entry, **policy)
+                    entry.policy.create(**policy)
+                    #Policy.objects.create(entry=entry, **policy)
+                if len(policy_data) == 0:
+                    entry.policy.create(policy='PUB')
+                    #Policy.objects.create(entry=entry, policy='PUB')
             return entry
         
         def update(self, instance, validated_data):
             policy_data = validated_data.pop('policy', None)
-            template = validated_data.pop('template', None)
+
             instance.title = validated_data.get('title', instance.title)
-            instance.data = validated_data.get('data', instance.data)
+            instance.text = validated_data.get('text', instance.text)
             with transaction.atomic():
                 instance.save()
                 for policy_entry in policy_data:
@@ -143,11 +149,22 @@ if blog_settings.USE_POLICY:
                     policy.end = policy_entry.get('end', policy.end)
                     policy.save()
             return instance
+        
+        def is_valid(self):
+            if super().is_valid() is False:
+                return False
+            if self.instance is not None and \
+                self.validated_data.get('template', None) is not None:
+                if self.instance.id != \
+                        self.validated_data.get('template').id:
+                    return False
+            return True
+                
 else:
     class ManageSerializer(ContentSerializer):
         class Meta:
             model = Content
-            fields = ('url','id', 'title', 'data', 'author', 'create_date', 
+            fields = ('url','id', 'title', 'text', 'author', 'create_date', 
                       'last_modified', 'is_active')
             extra_kwargs = {'url': {'view_name':'content/manage-detail'}}
             
@@ -161,8 +178,8 @@ class BulkAction(serializers.Serializer):
                                        ('DEL', 'Delete')])
     
     def create(self, validated_data):
-        object_ids = self.validated_data.get('objects')
-        action = self.validated_data.get('action')
+        object_ids = validated_data.get('objects')
+        action = validated_data.get('action')
         
         if action is 'PUBL' or 'UNPB':
             action_method = Policy.PUBLISH

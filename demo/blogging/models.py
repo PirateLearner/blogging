@@ -9,6 +9,31 @@ from blogging.settings import blog_settings
 
 from blogging import managers
 
+
+if blog_settings.USE_TEMPLATES is True:
+    class Template(models.Model):
+        name = models.CharField(max_length=15,
+                                blank = False,
+                                null = False)
+        fields = models.TextField()
+        author = models.ForeignKey(User,
+                                   null = True,
+                                   on_delete = models.SET_NULL,
+                                   related_name="template")
+            
+        def save(self, *args, **kwargs):
+            '''
+            Ensure that the fields are saved as a valid JSON.
+            '''
+            import json
+            try:
+                layout = json.loads(self.fields)
+                #Do something with this and generate the appropriate file
+                super(Template, self).save(*args, **kwargs)
+            except:
+                raise ValidationError("Check JSON validity (are you passing a"+
+                                      " dict, or a string?")
+
 class AbstractContent(models.Model):
     """
     Model for a raw blog database entry.
@@ -17,8 +42,9 @@ class AbstractContent(models.Model):
     author = models.ForeignKey(User, 
                                on_delete = models.CASCADE, 
                                related_name="content")
-    data = models.TextField()
+    text = models.TextField()
     create_date = models.DateTimeField(auto_now_add = True)
+    
     
     # Consult Policy table for this. This is just an inclusion flag that 'might' 
     # be useful while searching this table and filtering results.
@@ -29,7 +55,14 @@ class AbstractContent(models.Model):
     # @todo : The last modified filed should be updated only when the data field
     # or title field changes.
     last_modified = models.DateTimeField("Last modified", auto_now = True)
-    
+
+    if blog_settings.USE_TEMPLATES is True:
+        template = models.ForeignKey(Template,
+                                     on_delete=models.SET_NULL,
+                                     null = True,
+                                     blank = True,
+                                     related_name="content")
+
     def __str__(self):
         return self.title
 
@@ -42,10 +75,10 @@ class Content(AbstractContent):
     
     def save(self, *args, **kwargs):
         if len(self.title) == 0:
-            if len(self.data)==0:
-                raise ValidationError("Both title and data fields cannot be empty")
+            if len(self.text)==0:
+                raise ValidationError("Both title and text fields cannot be empty")
             else:
-                title = self.data.split(' ')
+                title = self.text.split(' ')
                 self.title = ' '.join(title[0: 9 if len(title)>10 else len(title)])
         
         super(Content, self).save(*args, **kwargs)
@@ -111,37 +144,3 @@ if blog_settings.USE_POLICY:
                 if self.end is None or self.end > timezone.now():
                     return True
             return False
-
-if blog_settings.USE_TEMPLATES is True:
-    class Template(models.Model):
-        name = models.CharField(max_length=15,
-                                blank = False,
-                                null = False)
-        fields = models.TextField()
-        author = models.ForeignKey(User,
-                                   null = True,
-                                   on_delete = models.SET_NULL,
-                                   related_name="template")
-            
-        def save(self, *args, **kwargs):
-            '''
-            Ensure that the fields are saved as a valid JSON.
-            '''
-            import json
-            try:
-                layout = json.loads(self.fields)
-                #Do something with this and generate the appropriate file
-                super(Template, self).save(*args, **kwargs)
-            except:
-                raise ValidationError("Check JSON validity (are you passing a"+
-                                      " dict, or a string?")
-        
-    class TemplateMap(models.Model):
-        content = models.ForeignKey(Content, 
-                                  related_name="mapped", 
-                                  on_delete = models.CASCADE)
-        template = models.ForeignKey(Template,
-                                     default=1,
-                                     on_delete=models.SET_DEFAULT)
-        
-        

@@ -145,7 +145,6 @@ class ManageView(viewsets.ViewSet):
             try:
                 template = Template.objects.get(id=template_id).name
                 serializer_name = CreateTemplate.get_manage_serializer_name(template)
-                
                 module = import_module('blogging.custom.'+\
                             CreateTemplate.get_file_name(template))
                 serializer_obj = getattr(module, serializer_name)
@@ -170,13 +169,15 @@ class ManageView(viewsets.ViewSet):
         
     def retrieve(self, request, pk, format=None):
         obj = self.get_object(pk)
-        
         try:
-            template = obj.mapped.name
+            template = obj.template.name
             serializer_name = CreateTemplate.get_manage_serializer_name(template)
-            module = import_module(template)
+            module = import_module('blogging.custom.'+\
+                            CreateTemplate.get_file_name(template))
+
             serializer_obj = getattr(module, serializer_name)
-            serializer = serializer_obj(data=request.data, 
+            
+            serializer = serializer_obj(instance=obj, 
                                        context={'request':request})
         except:
             serializer = ManageSerializer(instance=obj, 
@@ -186,16 +187,18 @@ class ManageView(viewsets.ViewSet):
     def update(self, request, pk, format=None):
         obj = self.get_object(pk)
         try:
-            template = obj.mapped.name
+            template = obj.template.name
             serializer_name = CreateTemplate.get_manage_serializer_name(template)
-            module = import_module(template)
+            module = import_module('blogging.custom.'+\
+                            CreateTemplate.get_file_name(template))
             serializer_obj = getattr(module, serializer_name)
             serializer = serializer_obj(instance=obj,
                                         data=request.data, 
                                        context={'request':request})
-        except:        
-            serializer = ManageSerializer(instance=obj, data=request.data, 
-                                       context={'request':request})
+        except:
+            serializer = ManageSerializer(instance=obj, 
+                                          data=request.data, 
+                                          context={'request':request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

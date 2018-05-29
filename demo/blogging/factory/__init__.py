@@ -42,7 +42,7 @@ from blogging.models import AbstractContent
 reserved_keywords = [field.name for field in AbstractContent._meta.get_fields()]
 reserved_keywords += ['pid_count']
 
-restrict_output_for = ['data'] # :( I didn't want to get specific
+restrict_output_for = ['text'] # :( I didn't want to get specific
 
 from blogging.rest.serializers import ManageSerializer, ContentSerializer
 
@@ -143,16 +143,16 @@ class CreateTemplate(object):
         
         text += "  "*indent+"super("+model_name+\
                                         ", self).__init__(*args, **kwargs)\n"
-        text += "  "*indent+"data=kwargs.get('data', None)\n"+\
-                "  "*indent+"if data is not None:\n"+\
-                "   "*indent+"data = json.loads(data)\n"+\
-                "   "*indent+"self.pid_count = data.get('pid_count', None)\n"+\
+        text += "  "*indent+"text=kwargs.get('text', None)\n"+\
+                "  "*indent+"if text is not None:\n"+\
+                "   "*indent+"text = json.loads(text)\n"+\
+                "   "*indent+"self.pid_count = text.get('pid_count', None)\n"+\
                 "   "*indent+"self.id = kwargs.get('id', None)\n"
         for member in self.members:
             for key,value in member.items():
                 if key.lower() in reserved_keywords:
                     continue
-                text += "   "*indent + "self."+ key.lower() +" = data.get('" +\
+                text += "   "*indent + "self."+ key.lower() +" = text.get('" +\
                                                         key.lower()+"',None)\n"
         text += "  "*indent+"else:\n"
         text += "   "*indent + "self.pid_count = pid_count\n"
@@ -162,7 +162,7 @@ class CreateTemplate(object):
                     continue
                 text += "   "*indent + "self."+ key.lower() +" = " + \
                                                             key.lower()+"\n"
-        text += "  "*indent+"delattr(self, 'data')\n"
+        text += "  "*indent+"delattr(self, 'text')\n"
         text += "  "*indent+"delattr(self, 'objects')\n"
         
         text += "\n"
@@ -185,7 +185,7 @@ class CreateTemplate(object):
                 "Field(serializers."+serializer_typemap[value['type']].get('name')+"):\n"
         text +="  "*indent+"def get_attribute(self, obj):\n"+\
                "   "*indent+"return ("+\
-                "json.loads(obj.data).get('"+key.lower()+"', None))"
+                "json.loads(obj.text).get('"+key.lower()+"', None))"
         return text
     
     def create_content_serializer_block(self, indent=0):
@@ -228,7 +228,7 @@ class CreateTemplate(object):
 #         text += ")\n"
         
         #text += "  "*indent+"fields= '__all__'\n"
-        text += "  "*indent+"exclude=("
+        text += "  "*indent+"exclude="+str(ContentSerializer.Meta.exclude)+"+("
         for member in restrict_output_for:
             text += "'"+member+"',"
         text += ")\n"
@@ -237,13 +237,13 @@ class CreateTemplate(object):
         text += "\n"
         
         #Getters
-        for member in self.members:
-            for key,value in member.items():
-                if key.lower() not in reserved_keywords:
-                    text += "\n"
-                    text += " "*indent+"def get_"+key.lower()+"(self, obj):\n"
-                    text += "  "*indent+"return json.loads(obj.data).get('"+\
-                                         key.lower()+"', None)\n"
+#         for member in self.members:
+#             for key,value in member.items():
+#                 if key.lower() not in reserved_keywords:
+#                     text += "\n"
+#                     text += " "*indent+"def get_"+key.lower()+"(self, obj):\n"
+#                     text += "  "*indent+"return json.loads(obj.text).get('"+\
+#                                          key.lower()+"', None)\n"
 
         return text
 
@@ -288,7 +288,7 @@ class CreateTemplate(object):
 #         text += ")\n"
         
         #text += "  "*indent+"fields= '__all__'\n"
-        text += "  "*indent+"exclude=("
+        text += "  "*indent+"exclude="+str(ManageSerializer.Meta.exclude)+"+("
         for member in restrict_output_for:
             text += "'"+member+"',"
         text += ")\n"
@@ -296,14 +296,14 @@ class CreateTemplate(object):
         text += "  "*indent+"extra_kwargs = "+\
                     ManageSerializer.Meta.extra_kwargs.__str__()+"\n"
 
-        #Getters
-        for member in self.members:
-            for key,value in member.items():
-                if key.lower() not in reserved_keywords:
-                    text += "\n"
-                    text += " "*indent+"def get_"+key.lower()+"(self, obj):\n"
-                    text += "  "*indent+"return json.loads(obj.data).get('"+\
-                                         key.lower()+"', None)\n"
+#         #Getters
+#         for member in self.members:
+#             for key,value in member.items():
+#                 if key.lower() not in reserved_keywords:
+#                     text += "\n"
+#                     text += " "*indent+"def get_"+key.lower()+"(self, obj):\n"
+#                     text += "  "*indent+"return json.loads(obj.text).get('"+\
+#                                          key.lower()+"', None)\n"
         #Create Method
         text += "\n"+" "*indent+"def create(self, validated_data):\n"
         text += "\n"+"  "*indent+"post_content = {}\n" +\
@@ -317,25 +317,25 @@ class CreateTemplate(object):
                             "validated_data.pop('"+key+"')\n"
         text += "\n"
         text += "  "*indent+\
-                    "validated_data['data'] = json.dumps(post_content)\n"
+                    "validated_data['text'] = json.dumps(post_content)\n"
         text += "  "*indent+"return super().create(validated_data)\n"
         
         #Update Method
         text += "\n"+" "*indent+"def update(self, instance, validated_data):\n"
-        text += "\n"+"  "*indent+"data = json.loads(instance.data)\n"
+        text += "\n"+"  "*indent+"text = json.loads(instance.text)\n"
         text += "  "*indent+"post_content = {}\n" +\
                 "  "*indent+"post_content['pid_count'] = "+\
-                "data.get('pid_count', None)\n"
+                "text.get('pid_count', None)\n"
         for member in self.members:
             for key,value in member.items():
                 if key.lower() in reserved_keywords:
                     continue
                 text += "  "*indent+"post_content['"+key.lower()+\
                             "'] = validated_data.pop('"+key.lower()+\
-                            "', data.get('"+key.lower()+"', None))\n"
+                            "', text.get('"+key.lower()+"', None))\n"
         text += "\n"
         text += "  "*indent+\
-                    "validated_data['data'] = json.dumps(post_content)\n"
+                    "validated_data['text'] = json.dumps(post_content)\n"
         text += "  "*indent+"return super().update(instance, validated_data)\n"
         return text
     

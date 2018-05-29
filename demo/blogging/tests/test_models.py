@@ -30,7 +30,7 @@ class ContentModel(BaseTest):
         obj = models.Content()
         obj.author = self.user
         obj.title = "Test Post"
-        obj.data = "We are entering some test data into this to test creation."
+        obj.text = "We are entering some test data into this to test creation."
         
         obj.save()
         
@@ -46,7 +46,7 @@ class ContentModel(BaseTest):
         obj = models.Content()
         obj.author = self.user
         obj.title = "Test Post"
-        obj.data = "We are entering some test data into this to test creation."
+        obj.text = "We are entering some test data into this to test creation."
         
         obj.save()
         
@@ -60,7 +60,7 @@ class ContentModel(BaseTest):
     def test_edit_content_title_field(self):
         obj = models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      "test creation."
                                                 )
@@ -76,31 +76,31 @@ class ContentModel(BaseTest):
                          from_db.title, 
                          "Changed title must be equal")
 
-    def test_edit_content_data_field(self):
+    def test_edit_content_text_field(self):
         obj = models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      "test creation."
                                                 )
         from_db = models.Content.objects.get(id=obj.id)
-        data = from_db.data
-        from_db.data = "We have slightly modified the data"
+        text = from_db.text
+        from_db.text = "We have slightly modified the data"
         from_db.save()
         
         #Affirm we don't find it by previous title
         from_db = models.Content.objects.get(id=obj.id)
-        self.assertNotEqual(data, 
-                            from_db.data, 
-                            "Data must not be equal to previous")
+        self.assertNotEqual(text, 
+                            from_db.text, 
+                            "text must not be equal to previous")
         self.assertEqual("We have slightly modified the data", 
-                         from_db.data, 
+                         from_db.text, 
                          "Changed data must be equal")
     
     def test_delete_content(self):
         obj = models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      "test creation."
                                                 )
@@ -113,13 +113,13 @@ class ContentModel(BaseTest):
     def test_create_multiple(self):
         obj_1 = models.Content.objects.create(author=self.user,
                                               title="Test Post",
-                                              data = "We are entering some"+
+                                              text = "We are entering some"+
                                                 "test data into this to"+
                                                 "test creation."
                                         )
         obj_2 = models.Content.objects.create(author=self.user,
                                               title="Another",
-                                              data = "Some more data to test"+
+                                              text = "Some more data to test"+
                                                      "out multiple creations."
                                                 )
         
@@ -139,18 +139,18 @@ class ContentModel(BaseTest):
         self.assertEqual(len(query_set), 0, "Non-Empty Query Set returned.")
         obj_1 = models.Content.objects.create(author=self.user,
                                               title="Test Post",
-                                              data = "We are entering some"+
+                                              text = "We are entering some"+
                                                 "test data into this to"+
                                                 "test creation."
                                         )
         obj_2 = models.Content.objects.create(author=self.user,
                                               title="Another",
-                                              data = "Some more data to test"+
+                                              text = "Some more data to test"+
                                                      "out multiple creations."
                                                 )
         obj_3 = models.Content(author=self.user,
                                               title="Another",
-                                              data = "Some more data to test"+
+                                              text = "Some more data to test"+
                                                       "out multiple creations."
                                                 )
         test_set = [obj_1, obj_2]
@@ -168,13 +168,13 @@ class ContentModel(BaseTest):
     def test_content_deletion_on_user_delete(self):
         models.Content.objects.create(author=self.user,
                                               title="Test Post",
-                                              data = "We are entering some"+
+                                              text = "We are entering some"+
                                                 "test data into this to"+
                                                 "test creation."
                                         )
         models.Content.objects.create(author=self.user,
                                               title="Another",
-                                              data = "Some more data to test"+
+                                              text = "Some more data to test"+
                                                      "out multiple creations."
                                                 )
         self.user.delete()
@@ -195,7 +195,7 @@ class ContentModel(BaseTest):
     def test_create_content_without_title(self):
         obj = models.Content()
         obj.author = self.user
-        obj.data = "We are entering some test data into this to test creation."
+        obj.text = "We are entering some test data into this to test creation."
         
         obj.save()        
         #Ideally, at least one of them should be specified.
@@ -208,10 +208,10 @@ class ContentModel(BaseTest):
                          "We are entering some test data into this to", 
                          "Title is not as expected")
 
-    def test_create_content_without_title_and_less_data(self):
+    def test_create_content_without_title_and_less_text(self):
         obj = models.Content()
         obj.author = self.user
-        obj.data = "We are ."
+        obj.text = "We are ."
         
         obj.save()        
         #Ideally, at least one of them should be specified.
@@ -228,14 +228,14 @@ if blog_settings.USE_POLICY:
     from django.utils import timezone
     class PolicyModel(BaseTest):
         
-        def _create_post(self, title, data, create_date=timezone.now()):
+        def _create_post(self, title, text, create_date=timezone.now()):
             return models.Content.objects.create(title=title, 
-                                                 data=data, 
+                                                 text=text, 
                                                  author=self.user,
                                                  create_date=create_date)
             
         def test_policy_create(self):
-            obj = self._create_post(title='Post 1', data='Some data')
+            obj = self._create_post(title='Post 1', text='Some data')
             policy_obj = models.Policy(entry=obj, policy = models.Policy.PUBLISH)
             policy_obj.save()
             
@@ -244,7 +244,7 @@ if blog_settings.USE_POLICY:
             
         def test_policy_publish_with_publish_date(self):
             obj = []
-            obj.append(self._create_post(title='Post 1', data='Some data'))
+            obj.append(self._create_post(title='Post 1', text='Some data'))
             
             for entry in obj:
                 policy_obj = models.Policy(entry=entry, 
@@ -263,7 +263,7 @@ if blog_settings.USE_POLICY:
         def test_policy_publish_with_publish_date_in_future(self):
             import datetime
             obj = []
-            obj.append(self._create_post(title='Post 1', data='Some data'))
+            obj.append(self._create_post(title='Post 1', text='Some data'))
             
             now = timezone.now()
             start = timezone.datetime.combine(datetime.date(now.year, 
@@ -297,7 +297,7 @@ if blog_settings.USE_POLICY:
                                               datetime.time(now.hour,
                                                             now.minute))
             create_date = timezone.make_aware(create_date)
-            obj.append(self._create_post(title='Post 1', data='Some data',
+            obj.append(self._create_post(title='Post 1', text='Some data',
                                          create_date = create_date))
             
             start = create_date
@@ -335,7 +335,7 @@ if blog_settings.USE_POLICY:
                                               datetime.time(now.hour,
                                                             now.minute))
             create_date = timezone.make_aware(create_date)
-            obj.append(self._create_post(title='Post 1', data='Some data',
+            obj.append(self._create_post(title='Post 1', text='Some data',
                                          create_date = create_date))
             
             start = create_date
@@ -352,7 +352,7 @@ if blog_settings.USE_POLICY:
                                            end = stop)
                 policy_obj.save()
     
-            obj.append(self._create_post(title='Post 2', data='Some other data',
+            obj.append(self._create_post(title='Post 2', text='Some other data',
                                          create_date = create_date))
             
             policy_obj = models.Policy(entry=obj[-1], 
@@ -373,7 +373,7 @@ if blog_settings.USE_POLICY:
                           "{o} not in list when it should be".format(o=obj[0]))
             
         def test_policy_deletion_on_content_delete(self):
-            obj = self._create_post(title='Post 1', data='Some data')
+            obj = self._create_post(title='Post 1', text='Some data')
             policy_obj = models.Policy(entry=obj, 
                                        policy = models.Policy.PUBLISH)
             policy_obj.save()
@@ -389,7 +389,7 @@ if blog_settings.USE_POLICY:
                              "Policy table not empty")
             
         def test_policy_edit(self):
-            obj = self._create_post(title='Post 1', data='Some data')
+            obj = self._create_post(title='Post 1', text='Some data')
             policy_obj = models.Policy(entry=obj, 
                                        policy = models.Policy.PUBLISH)
             policy_obj.save()
@@ -405,7 +405,7 @@ if blog_settings.USE_POLICY:
             
         def test_policy_publish_and_pin(self):
             obj = []
-            obj.append(self._create_post(title='Post 1', data='Some data'))
+            obj.append(self._create_post(title='Post 1', text='Some data'))
             
             for entry in obj:
                 policy_obj = models.Policy(entry=entry, 
@@ -427,8 +427,8 @@ if blog_settings.USE_POLICY:
                 
         def test_policy_multiple_publish_and_single_pin(self):
             obj = []
-            obj.append(self._create_post(title='Post 1', data='Some data'))
-            obj.append(self._create_post(title='Post 2', data='Some data again'))
+            obj.append(self._create_post(title='Post 1', text='Some data'))
+            obj.append(self._create_post(title='Post 2', text='Some data again'))
             
             for entry in obj:
                 policy_obj = models.Policy(entry=entry, 
@@ -484,21 +484,3 @@ if blog_settings.USE_TEMPLATES:
             
             new_obj = models.Template.objects.get(id=1)
             
-            
-    class TemplateMapTests(BaseTest):
-        def test_create_template_map(self):
-            layout = [{'title': {'type': 'CharField',
-                                 'extra': {'max_length': 100}}}]
-            template = models.Template.objects.create(name = "Blog",
-                                              fields = json.dumps(layout))
-            content = models.Content.objects.create(author=self.user,
-                                                title="Test Post",
-                                                data = "We are entering some"+
-                                                     "test data into this to"+
-                                                     "test creation."
-                                                )
-            map = models.TemplateMap(content=content, template = template)
-            map.save()
-            self.assertNotEqual(map.id, 0, 
-                                "A non-zero ID must have been assigned.")
-        

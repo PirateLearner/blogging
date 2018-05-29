@@ -146,7 +146,7 @@ class EditView(View):
                                                 kwargs={"blog_id":instance.id}))
         else:
             context  ={'entry': form}
-            return render(request, self.template_name, context)
+            return render(request, self.template_name, context, status = 400)
     
     def delete_entry(self, blog_id):
         if blog_id is None:

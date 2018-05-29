@@ -15,7 +15,7 @@ from blogging import models
 from rest_framework.request import Request
 from rest_framework import status
 from unittest import skip
-from blogging.models import Policy
+from blogging.models import (Policy, Content)
 from blogging.factory import CreateTemplate
 
 class BaseTest(APITestCase):
@@ -52,7 +52,7 @@ class listAPITests(BaseTest):
     def test_get_empty_content_list_all_unpublished(self):
         obj = models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      " test creation."
                                                 )
@@ -78,7 +78,7 @@ class listAPITests(BaseTest):
         from django.utils import timezone
         obj = models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      " test creation."
                                                 )
@@ -103,7 +103,7 @@ class listAPITests(BaseTest):
     def test_get_list_from_serializer(self):
         obj = models.Content.objects.create(author=self.user,
                                             title="Test Post",
-                                            data = "We are entering some"+
+                                            text = "We are entering some"+
                                                  "test data into this to"+
                                                  " test creation."
                                             )
@@ -113,7 +113,7 @@ class listAPITests(BaseTest):
         
         ser = ContentSerializer(obj, context=request_context)
         self.assertEqual(ser.data['title'], 'Test Post', 'Titles are dissimilar')
-        self.assertEqual(ser.data['data'], "We are entering some"+
+        self.assertEqual(ser.data['text'], "We are entering some"+
                                            "test data into this to"+
                                            " test creation.", 
                                            'Content is dissimilar')
@@ -121,7 +121,7 @@ class listAPITests(BaseTest):
     def test_post_new_content_with_login_disallowed(self):
         request = self.factory.post('/rest/content/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      'author': '/rest/users/1/'})
         user = User.objects.get(username=self.user.username)
         #request.user = self.user
@@ -135,7 +135,7 @@ class listAPITests(BaseTest):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      'author': '/rest/users/1/'})
         response.render() #Must be called before anything happens
         self.assertContains(response,
@@ -146,7 +146,7 @@ class listAPITests(BaseTest):
     def test_unpublished_post_absent_in_public_list(self):
         obj = models.Content.objects.create(author=self.user,
                                             title="Test Post",
-                                            data = "We are entering some"+
+                                            text = "We are entering some"+
                                                  "test data into this to"+
                                                  " test creation."
                                             )
@@ -166,7 +166,7 @@ class listAPITests(BaseTest):
         
         obj = models.Content.objects.create(author=user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      " test creation."
                                                 )
@@ -199,7 +199,7 @@ class listAPITests(BaseTest):
         
         obj = models.Content.objects.create(author=user,
                                             title="Test Post",
-                                            data = "We are entering some"+
+                                            text = "We are entering some"+
                                                    "test data into this to"+
                                                    " test creation."
                                                 )
@@ -240,7 +240,7 @@ class manageAPITests(BaseTest):
     def test_get_non_empty_content_list(self):
         models.Content.objects.create(author=self.user,
                                                 title="Test Post",
-                                                data = "We are entering some"+
+                                                text = "We are entering some"+
                                                      "test data into this to"+
                                                      " test creation."
                                                 )
@@ -259,7 +259,7 @@ class manageAPITests(BaseTest):
     def test_get_list_from_serializer(self):
         obj = models.Content.objects.create(author=self.user,
                                             title="Test Post",
-                                            data = "We are entering some"+
+                                            text = "We are entering some"+
                                                  "test data into this to"+
                                                  " test creation."
                                             )
@@ -269,7 +269,7 @@ class manageAPITests(BaseTest):
         
         ser = ContentSerializer(obj, context=request_context)
         self.assertEqual(ser.data['title'], 'Test Post', 'Titles are dissimilar')
-        self.assertEqual(ser.data['data'], "We are entering some"+
+        self.assertEqual(ser.data['text'], "We are entering some"+
                                            "test data into this to"+
                                            " test creation.", 
                                            'Content is dissimilar')
@@ -277,7 +277,7 @@ class manageAPITests(BaseTest):
     def test_post_new_content_without_login(self):
         request = self.factory.post('/rest/content/manage/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post'})
+                                     'text': 'Data in test post'})
         view = ManageView.as_view({'post': 'create'})
         response = view(request)
         response.render()
@@ -290,7 +290,7 @@ class manageAPITests(BaseTest):
     def test_post_new_content_with_login(self):
         request = self.factory.post('/rest/content/manage/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      'author': '/rest/users/1/'})
         user = User.objects.get(username=self.user.username)
         #request.user = self.user
@@ -310,7 +310,7 @@ class manageAPITests(BaseTest):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      'author': '/rest/users/1/'})
         response.render() #Must be called before anything happens
         self.assertContains(response,
@@ -322,7 +322,7 @@ class manageAPITests(BaseTest):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/', 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      })
         response.render() #Must be called before anything happens
         self.assertContains(response,
@@ -330,7 +330,7 @@ class manageAPITests(BaseTest):
                             count=0,
                             status_code=status.HTTP_201_CREATED)
 
-    def test_post_new_content_without_data(self):
+    def test_post_new_content_without_text(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/', 
                                     {'title':'Test Post',
@@ -341,7 +341,7 @@ class manageAPITests(BaseTest):
                             count=0,
                             status_code=status.HTTP_201_CREATED)
 
-    def test_post_new_content_without_data_or_title(self):
+    def test_post_new_content_without_text_or_title(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/', 
                                     {})
@@ -351,11 +351,11 @@ class manageAPITests(BaseTest):
                             count=0,
                             status_code=status.HTTP_400_BAD_REQUEST)
 
-    def test_post_with_empty_title_and_emtpy_data(self):
+    def test_post_with_empty_title_and_emtpy_text(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/', 
                                     {'title': ' ',
-                                     'data': ''})
+                                     'text': ''})
         response.render() #Must be called before anything happens
         self.assertContains(response,
                             text='OK',
@@ -388,7 +388,7 @@ class detailAPITests(BaseTest):
     def test_unpublished_url_gives_404(self):
         obj = models.Content.objects.create(author=self.user,
                                             title="Test Post",
-                                            data = "We are entering some"+
+                                            text = "We are entering some"+
                                                  "test data into this to"+
                                                  " test creation."
                                             )
@@ -403,7 +403,7 @@ class detailAPITests(BaseTest):
     def test_get_on_exsting_object_without_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -423,7 +423,7 @@ class detailAPITests(BaseTest):
         self.assertEqual(text['title'],
                          'Test Post',
                          "Titles don't match")
-        self.assertEqual(text['data'],
+        self.assertEqual(text['text'],
                          "We are entering some"+
                          "test data into this to"+
                          " test creation.",
@@ -432,7 +432,7 @@ class detailAPITests(BaseTest):
     def test_get_on_exsting_object_without_login_manage(self):
         models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -447,7 +447,7 @@ class detailAPITests(BaseTest):
     def test_get_on_exsting_object_with_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -469,7 +469,7 @@ class detailAPITests(BaseTest):
         self.assertEqual(text['title'],
                          'Test Post',
                          "Titles don't match")
-        self.assertEqual(text['data'],
+        self.assertEqual(text['text'],
                          "We are entering some"+
                          "test data into this to"+
                          " test creation.",
@@ -478,7 +478,7 @@ class detailAPITests(BaseTest):
     def test_get_on_exsting_object_with_login_manage(self):
         models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -494,7 +494,7 @@ class detailAPITests(BaseTest):
         self.assertEqual(text['title'],
                          'Test Post',
                          "Titles don't match")
-        self.assertEqual(text['data'],
+        self.assertEqual(text['text'],
                          "We are entering some"+
                          "test data into this to"+
                          " test creation.",
@@ -503,13 +503,13 @@ class detailAPITests(BaseTest):
     def test_edit_on_existing_object_without_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
         response = self.client.put('/rest/content/manage/{cid}/'.format(cid=obj.id), 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      })
         self.assertContains(response, 
                             text='Permission denied', 
@@ -519,15 +519,17 @@ class detailAPITests(BaseTest):
     def test_post_on_existing_object_with_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/rest/content/manage/{cid}/'.format(cid=obj.id), 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      })
+        response.render()
+        #print(response.content)
         self.assertContains(response, 
                             text='OK', 
                             count=0, 
@@ -536,14 +538,14 @@ class detailAPITests(BaseTest):
     def test_put_on_existing_object_with_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
         self.client.force_authenticate(user=self.user)
         response = self.client.put('/rest/content/manage/{cid}/'.format(cid=obj.id), 
                                     {'title':'Test Post',
-                                     'data': 'Data in test post',
+                                     'text': 'Data in test post',
                                      })
         self.assertContains(response, 
                             text='OK', 
@@ -553,7 +555,7 @@ class detailAPITests(BaseTest):
     def test_delete_existing_object_without_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -566,7 +568,7 @@ class detailAPITests(BaseTest):
     def test_delete_existing_object_with_login(self):
         obj = models.Content.objects.create(author=self.user,
                                         title="Test Post",
-                                        data = "We are entering some"+
+                                        text = "We are entering some"+
                                              "test data into this to"+
                                              " test creation."
                                         )
@@ -588,7 +590,7 @@ from blogging.settings import blog_settings
 
 if blog_settings.USE_TEMPLATES:
     from blogging.rest.serializers import TemplateSerializer
-    from blogging.models import Template, TemplateMap
+    from blogging.models import Template
     import os
     
     class TestTemplates(BaseTest):
@@ -714,7 +716,7 @@ if blog_settings.USE_TEMPLATES:
             #print(ser_obj.errors)
             
             mod_obj = models.Content.objects.get(id=1)
-            #print(json.loads(mod_obj.data))
+            #print(json.loads(mod_obj.text))
             #mod_obj = model.objects.get(id=1)
             self.assertNotEqual(mod_obj, None, "No object returned")
             os.remove(CreateTemplate.get_full_file_path(
@@ -745,8 +747,105 @@ if blog_settings.USE_TEMPLATES:
                                          'template': 1,
                                         'policy': [{'policy': 'PUB'}]})
             response.render() #Must be called before anything happens
-            print(response.content)
+            #print(response.content)
             self.assertContains(response,
                                 text='OK',
                                 count=0,
                                 status_code=status.HTTP_201_CREATED)
+            
+            obj = Content.objects.get(id=1)
+            self.assertNotEqual(obj, None, "No valid object returned.")
+
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
+
+        def test_fetch_entry_for_editing(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            self.client.post('/rest/content/manage/', 
+                                {'title':'Test Post',
+                                 'body': 'Data in test post',
+                                 'template': 1,
+                                 })
+            
+            response = self.client.get('/rest/content/manage/1/')
+            response.render()
+            
+            content = json.loads(response.content)
+            self.assertEqual(content.get('title'), 
+                             'Test Post', 
+                             "Titles are not equal")
+            self.assertEqual(content.get('body'), 
+                             'Data in test post', 
+                             "Body is not equal")
+            self.assertEqual(content.get('template'), 
+                             1, 
+                             "Templates are not same")
+            
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
+            
+        def test_edit_entry(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            self.client.post('/rest/content/manage/', 
+                                {'title':'Test Post',
+                                 'body': 'Data in test post',
+                                 'template': 1,
+                                 'policy': [{'policy': 'PUB'}]})
+            
+            response = self.client.get('/rest/content/manage/1/')
+            response.render()
+            
+            #content = json.loads(response.content)
+            #print(content)
+            self.client.post('/rest/content/manage/1/', 
+                                {'title':'Test Post Edit',
+                                 'body': 'Edited text',
+                                 })
+            
+            response = self.client.get('/rest/content/manage/1/')
+            response.render()
+            
+            content = json.loads(response.content)
+            #print(content)
+            self.assertEqual(content.get('title'), 
+                             'Test Post Edit', 
+                             "Titles are not equal")
+            self.assertEqual(content.get('body'), 
+                             'Edited text', 
+                             "Body is not equal")
+            self.assertEqual(content.get('template'), 
+                             1, 
+                             "Templates are not same")
+            
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
