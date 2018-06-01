@@ -17,6 +17,8 @@ from django.urls import resolve
 from unittest import skip
 from django.shortcuts import render
 
+from blogging.settings import blog_settings
+
 class BaseTest(TestCase):
     def _create_post(self, title, text, author=None):
         return models.Content.objects.create(title=title, 
@@ -209,7 +211,7 @@ class ManageView(BaseTest):
     #And later, must be filtered by author
     def test_resolve_index_page(self):
         found = resolve("/blogging/manage/")
-        self.assertEqual(found.func, views.manage, "Could not find view")
+        self.assertEqual(found.func, views.manage_content, "Could not find view")
 
     def test_template_used(self):
         self.client.login(username=self.user.username, 
@@ -220,7 +222,7 @@ class ManageView(BaseTest):
     def redirect_to_login_page_on_access(self):
         #Not currently interested in login page url
         request = HttpRequest()
-        response = views.manage(request)
+        response = views.manage_content(request)
         self.assertContains(response=response, 
                             text="", 
                             count=0,
@@ -249,7 +251,7 @@ class ManageView(BaseTest):
         self._create_post(title="Post 2", text="This is post number 2")
         request = HttpRequest()
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertContains(response=response, 
                             text="Post 1", 
@@ -282,7 +284,7 @@ class ManageView(BaseTest):
         request = HttpRequest()
         request.GET['author']= 'tester2'
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertContains(response=response, 
                             text="Post 2", 
@@ -312,7 +314,7 @@ class ManageView(BaseTest):
         request = HttpRequest()
         request.GET['drafts']= ''
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertNotContains(response, text='Post 1', status_code=200)
         self.assertContains(response=response, 
@@ -350,7 +352,7 @@ class ManageView(BaseTest):
         request.GET['author']= 'tester2'
         request.GET['drafts']= ''
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertNotContains(response, text='Post 1', status_code=200)
         self.assertNotContains(response, text='Post 3', status_code=200)
@@ -384,7 +386,7 @@ class ManageView(BaseTest):
         request = HttpRequest()
         request.GET['published']= ''
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertContains(response=response, 
                             text="Post 1", 
@@ -421,7 +423,7 @@ class ManageView(BaseTest):
         request.GET['author']= 'tester2'
         request.GET['published']= ''
         request.user = self.user
-        response = views.manage(request)
+        response = views.manage_content(request)
         
         self.assertNotContains(response, text='Post 1', status_code=200)
         self.assertContains(response=response, 
@@ -644,3 +646,263 @@ class EditView(BaseTest):
                             text="Contains title", 
                             count=1, 
                             status_code=200)
+        
+if blog_settings.USE_TEMPLATES:
+    from blogging.factory import CreateTemplate
+    from blogging.models import Template
+    import os
+    import json
+    
+    class TestTemplates(BaseTest):
+        
+        def tearDown(self):
+            BaseTest.tearDown(self)
+            
+            if(CreateTemplate.file_exists('Blogging')):
+                #pass
+                os.remove(CreateTemplate.get_full_file_path(
+                                     CreateTemplate.get_file_name("Blogging")))
+        
+        def test_create_new_template(self):
+            
+            self.client.force_authenticate(user=self.user)
+            
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
+            
+            response = self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            response.render() #Must be called before anything happens
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=201)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "One DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+            
+            os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
+        
+        def test_create_duplicate_template_fails(self):
+            self.client.force_authenticate(user=self.user)
+            
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}}]
+            
+            response = self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                                 {'body' : {'type': 'TextField',
+                                            'extra': None
+                                            }
+                                  }]
+            
+            response = self.client.post('/content/template/', 
+                                        {'name':'blogging',
+                                         'fields': json.dumps(layout),
+                                         })
+            response.render() #Must be called before anything happens
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=400)
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "Only one DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, 
+                                    name, "Improper name saved in DB")
+                
+            os.remove(CreateTemplate.get_full_file_path(
+                                     CreateTemplate.get_file_name(name)))
+            
+        
+        #@skip("Testing")
+        def test_create_entry_with_template(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            
+            #Created. Now load
+            from importlib import import_module
+            module = import_module(module_name)
+            
+            serializer_name = CreateTemplate.get_manage_serializer_name(name)
+            serializer = getattr(module, serializer_name)
+            
+            #Loaded, now try to create
+            ser_obj = serializer(data = {'title': 'Test Post',
+                                        'body': 'This is a test post!',
+                                        'policy': [{'policy': 'PUB'}]})
+            
+            if ser_obj.is_valid():
+                ser_obj.save(author=self.user)
+            
+            #print(ser_obj.errors)
+            
+            mod_obj = models.Content.objects.get(id=1)
+            #print(json.loads(mod_obj.text))
+            #mod_obj = model.objects.get(id=1)
+            self.assertNotEqual(mod_obj, None, "No object returned")
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
+        
+        #@skip('Developing')
+        def test_create_entry_with_template_from_client(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            
+            response = self.client.post('/content/manage/', 
+                                        {'title':'Test Post',
+                                         'body': 'Data in test post',
+                                         'template': 1,
+                                        'policy': [{'policy': 'PUB'}]})
+            response.render() #Must be called before anything happens
+            #print(response.content)
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=201)
+            
+            obj = models.Content.objects.get(id=1)
+            self.assertNotEqual(obj, None, "No valid object returned.")
+
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
+
+        def test_fetch_entry_for_editing(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            self.client.post('/content/manage/', 
+                                {'title':'Test Post',
+                                 'body': 'Data in test post',
+                                 'template': 1,
+                                 })
+            
+            response = self.client.get('/content/manage/1/')
+            response.render()
+            
+            content = json.loads(response.content)
+            self.assertEqual(content.get('title'), 
+                             'Test Post', 
+                             "Titles are not equal")
+            self.assertEqual(content.get('body'), 
+                             'Data in test post', 
+                             "Body is not equal")
+            self.assertEqual(content.get('template'), 
+                             1, 
+                             "Templates are not same")
+            
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))
+            
+        def test_edit_entry(self):
+            self.client.force_authenticate(user=self.user)
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            module_name = 'blogging.custom.'+\
+                                    CreateTemplate.get_file_name(name)
+            self.client.post('/rest/content/manage/', 
+                                {'title':'Test Post',
+                                 'body': 'Data in test post',
+                                 'template': 1,
+                                 'policy': [{'policy': 'PUB'}]})
+            
+            response = self.client.get('/content/manage/1/')
+            response.render()
+            
+            #content = json.loads(response.content)
+            #print(content)
+            self.client.post('/content/manage/1/', 
+                                {'title':'Test Post Edit',
+                                 'body': 'Edited text',
+                                 })
+            
+            response = self.client.get('/content/manage/1/')
+            response.render()
+            
+            content = json.loads(response.content)
+            #print(content)
+            self.assertEqual(content.get('title'), 
+                             'Test Post Edit', 
+                             "Titles are not equal")
+            self.assertEqual(content.get('body'), 
+                             'Edited text', 
+                             "Body is not equal")
+            self.assertEqual(content.get('template'), 
+                             1, 
+                             "Templates are not same")
+            
+            os.remove(CreateTemplate.get_full_file_path(
+                                    CreateTemplate.get_file_name(name)))        

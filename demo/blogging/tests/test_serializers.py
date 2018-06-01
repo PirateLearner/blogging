@@ -700,10 +700,7 @@ if blog_settings.USE_TEMPLATES:
             module = import_module(module_name)
             
             serializer_name = CreateTemplate.get_manage_serializer_name(name)
-            model_name = CreateTemplate.get_model_name(name)
-            
             serializer = getattr(module, serializer_name)
-            model = getattr(module, model_name)
             
             #Loaded, now try to create
             ser_obj = serializer(data = {'title': 'Test Post',

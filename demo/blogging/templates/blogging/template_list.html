@@ -1,0 +1,20 @@
+{% extends "blogging/base.html" %}
+{% block content %}
+{% if templates %}
+  <ul>
+    {% for template in templates %}
+      <li>
+          <div>
+            <span>
+                <a href="{% url 'blogging:manage/template' template.id %}">
+                    {{ template.name }}
+                </a>
+            </span>
+          </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+<h3>No templates have been created!</h3>
+{% endif %}
+{% endblock %}

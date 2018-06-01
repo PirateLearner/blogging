@@ -27,8 +27,20 @@ serializer_typemap = {
                           }
             }
 
-def serializer_field_expand(value):
-    field = serializer_typemap[value]
+form_typemap = {
+            'TextField': {'name':'CharField',
+                          'extra': None,
+                          },
+            'CharField': {'name':'CharField',
+                          'extra': None,
+                          },
+            'Image'    : {'name': 'ImageField',
+                          'extra': None,
+                          }
+            }
+
+def field_options_expand(value, dictionary = serializer_typemap):
+    field = dictionary[value]
     #text = field.get('name')+'('
     text = ''
     if field.get('extra', None) is not None:
@@ -45,6 +57,7 @@ reserved_keywords += ['pid_count']
 restrict_output_for = ['text'] # :( I didn't want to get specific
 
 from blogging.rest.serializers import ManageSerializer, ContentSerializer
+from blogging.forms import ManageForm
 
 class CreateTemplate(object):
     """
@@ -88,6 +101,10 @@ class CreateTemplate(object):
     @classmethod
     def get_view_serializer_name(cls, name):
         return "View"+cls.get_serializer_name(name)
+
+    @classmethod
+    def get_form_name(cls, name):
+        return cls.sanitize_name(name)+"Form"
     
     @classmethod
     def sanitize_name(cls, name):
@@ -106,8 +123,8 @@ class CreateTemplate(object):
         
         
     def create_model_imports(self):
-        text = "\n"+"from django.db import models\n"
-        text += "from blogging.models import (AbstractContent, Content)\n"
+        #text = "\n"+"from django.db import models\n"
+        text = "from blogging.models import (AbstractContent, Content)\n"
         text += "import json\n"
         
         return text
@@ -168,9 +185,62 @@ class CreateTemplate(object):
         text += "\n"
         return text
     
-    def create_form_block(self):
-        pass
-    
+    def create_form_imports(self):
+        text = "\nfrom django import forms\n"
+        text += "\n"
+        return text
+
+    def create_form_block(self, indent = 0):
+        form_name = self.get_form_name(self.name)
+        text = "class "+form_name+"(forms.ModelForm):\n"
+        indent += 4
+        
+        for member in self.members:
+            for key,value in member.items():
+                if key.lower() in reserved_keywords:
+                    continue
+                text += " "*indent + key.lower()+"= forms."+\
+                        form_typemap[value['type']].get('name') +"("+\
+                        field_options_expand(value['type'], 
+                                             dictionary = form_typemap)+")\n"
+                        
+        text += "\n"+" "*indent + "class Meta:\n"
+        text += "  "*indent +"model = Content\n"
+        text += "  "*indent+"exclude="+str(ManageForm.Meta.exclude)+"+("
+        for member in restrict_output_for:
+            text += "'"+member+"',"
+        text += ")\n"
+        
+        #Enhance __init__ if data is provided, we need to do some field jugglery
+        text += "\n"
+        text +=" "*indent+"def __init__(self, *args, data=None, initial=None,"+\
+                                " instance=None, **kwargs):\n"
+        #If data is provided (saving form data?), create a 'text' field to 
+        #create a model instance. It can be blank, we will be saving it eventually
+        text +="  "*indent+"if data is not None:\n"+\
+               "   "*indent+"data['text'] = ''\n"
+        text +="  "*indent+"super().__init__(*args, data, initial, instance, "+\
+                            "**kwargs)\n"
+        #If instance was also provided (Updating stuff?))
+        
+        #Enhance save method
+        text += "\n"
+        text += " "*indent+"def save(self, *args, **kwargs):\n"
+        text +="  "*indent+"post_content = {}\n"+\
+               "  "*indent+"post_content['pid_count'] = None\n"
+               
+        for member in self.members:
+            for key,value in member.items():
+                if key.lower() in reserved_keywords:
+                    continue
+                text += "  "*indent+"post_content['"+key.lower()+"']= "+\
+                            "self.cleaned_data.get('"+key.lower()+"',"+\
+                            " self.instance."+key.lower()+")\n"
+        text += "  "*indent+"self.instance.text = json_dumps(post_content)\n"
+        text += "  "*indent+"return super().save(*args, **kwargs)"
+        
+        return text
+        
     def create_serializer_imports(self):
         text = "\n" + "from rest_framework import serializers"
         text += "\n" + "from blogging.rest.serializers import "+\
@@ -189,8 +259,8 @@ class CreateTemplate(object):
         return text
     
     def create_content_serializer_block(self, indent=0):
-        serial_name = self.get_serializer_name(self.name)
-        text = "\n"+"class View"+serial_name+"(ContentSerializer):\n"
+        text = "\n"+"class "+self.get_view_serializer_name(self.name)+\
+                                                    "(ContentSerializer):\n"
         indent += 4
         
         for member in self.members:
@@ -207,7 +277,7 @@ class CreateTemplate(object):
                     continue
                 text += "\n"+" "*indent+key.lower()+"= "+\
                         key.lower().title()+"Field("+\
-                        serializer_field_expand(value['type'])+")"
+                        field_options_expand(value['type'])+")"
         text += "\n"
         
         for member in restrict_output_for:
@@ -248,8 +318,8 @@ class CreateTemplate(object):
         return text
 
     def create_manage_serializer_block(self, indent=0):
-        serial_name = self.get_serializer_name(self.name)
-        text = "\n"+"class Manage"+serial_name+"(ManageSerializer):\n"
+        text = "\n"+"class "+self.get_manage_serializer_name(self.name)+\
+                                                    "(ManageSerializer):\n"
         indent += 4
         
         #text += " "*indent+"template = serializers.PrimaryKeyRelatedField("+\
@@ -268,7 +338,7 @@ class CreateTemplate(object):
                     continue
                 text += "\n"+" "*indent+key.lower()+"= "+\
                         key.lower().title()+"Field("+\
-                        serializer_field_expand(value['type'])+")"
+                        field_options_expand(value['type'])+")"
         text += "\n"
         
         for member in restrict_output_for:
@@ -350,10 +420,13 @@ class CreateTemplate(object):
         
         fd.write("raw_name = '"+self.name+"'\n")
         fd.write(self.create_model_imports())
-        fd.write(self.create_model_block(indent=0))
+        #fd.write(self.create_model_block(indent=0))
         fd.write(self.create_serializer_imports())
         fd.write(self.create_content_serializer_block(indent=0))
         fd.write(self.create_manage_serializer_block(indent=0))
+        
+        fd.write(self.create_form_imports())
+        fd.write(self.create_form_block(indent=0))
         
         fd.close()
 #         print (self.name)

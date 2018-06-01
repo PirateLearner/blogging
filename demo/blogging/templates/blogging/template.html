@@ -1,0 +1,22 @@
+{% extends "blogging/base.html" %}
+{% block content %}
+<h3>Create Template</h3>
+<div>
+  {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+  <form action="." method="post">
+    {% csrf_token %}
+      {% for field in template %}
+      <div>
+        {{ field.errors }}
+        {{ field.label_tag }}{{ field }}
+      </div>
+      {% endfor %}
+      {% for field in template.hidden_fields %}
+        {{ field.label_tag }}{{ field }}
+      {% endfor %}
+    <input type="submit" value="Save" name="Save"/>
+    <input type="submit" value="Delete" name="Delete"/>
+  </form>
+</div>
+{% endblock %}

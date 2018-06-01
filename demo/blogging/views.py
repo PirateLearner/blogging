@@ -7,6 +7,16 @@ from blogging.models import Content, Policy
 from django.utils import timezone
 from django.db.models import Q
 
+from blogging.settings import blog_settings
+
+if blog_settings.USE_POLICY:
+    from blogging.models import Policy
+    
+if blog_settings.USE_TEMPLATES:
+    from blogging.models import Template
+    from blogging.factory import CreateTemplate
+    from importlib import import_module
+    
 # Create your views here.
 
 def index(request):
@@ -30,7 +40,7 @@ def index(request):
 from django.contrib.auth.decorators import login_required
 
 @login_required
-def manage(request):
+def manage_content(request):
     username = request.GET.get('author', None)
     get_pinned = request.GET.get('pinned', None)
     draft_only = request.GET.get('drafts', None)
@@ -101,11 +111,20 @@ class EditView(View):
     @method_decorator(login_required, name='get')
     def get(self, request, blog_id):
         user = request.user
+        form_class = self.form_class
+        if blog_settings.USE_TEMPLATES:
+            template_str = request.GET.get('template', None)
+            if template_str is not None:
+                template = Template.objects.get(name=template_str)
+                form_name = CreateTemplate.get_form_name(template)
+                module = import_module('blogging.custom.'+\
+                            CreateTemplate.get_file_name(template))
+                form_class = getattr(module, form_name)
         if blog_id is None:
-            form = self.form_class(initial = {'author': user})
+            form = form_class(initial = {'author': user})
         else:
             try:
-                form = self.form_class(instance=Content.objects.get(id=blog_id))
+                form = form_class(instance=Content.objects.get(id=blog_id))
             except Content.DoesNotExist:
                 raise Http404("Trying to edit an entry that does not exist.")
         context={"entry": form}
@@ -122,7 +141,16 @@ class EditView(View):
                 instance = Content.objects.get(id=blog_id)
             except:
                 raise Http404("Trying to save an entry that does not exist.")
-        form = self.form_class(request.POST, instance=instance)
+        form_class = self.form_class
+        if blog_settings.USE_TEMPLATES:
+            template_str = request.POST.get('template', None)
+            if template_str is not None:
+                template = Template.objects.get(name=template_str)
+                form_name = CreateTemplate.get_form_name(template)
+                module = import_module('blogging.custom.'+\
+                            CreateTemplate.get_file_name(template))
+                form_class = getattr(module, form_name)
+        form = form_class(request.POST, instance=instance)
         if form.is_valid():
             instance = form.save(commit=False)
             instance.author = request.user
@@ -154,3 +182,71 @@ class EditView(View):
         else:
             Content.objects.get(id=blog_id).delete()
             return HttpResponseRedirect(reverse('blogging:index'))
+
+if blog_settings.USE_TEMPLATES:
+    from blogging.forms import TemplateForm
+
+    @login_required
+    def manage_templates(request):
+        username = request.GET.get('author', None)
+        filtermap = {'author': Q(author__username=username),
+                    }
+        
+        queryset = Template.objects.all().order_by('-create_date')
+        
+        if username is not None:
+            queryset = queryset.filter(filtermap['author'])
+
+        context = {'templates': queryset,}
+        template = "blogging/template_list.html"
+        return render(request, template, context)
+
+    
+    class TemplateView(View):
+        form_class = TemplateForm
+        template_name = "blogging/template.html"
+        
+        @method_decorator(login_required, name='get')
+        def get(self, request, template_id):
+            user = request.user
+            form_class = self.form_class
+            if template_id is None:
+                form = form_class(initial = {'author': user})
+            else:
+                try:
+                    form = form_class(instance=Template.objects.get(id=
+                                                                  template_id))
+                except Content.DoesNotExist:
+                    raise Http404("Trying to edit a template that does not exist.")
+            context={"template": form}
+            return render(request, self.template_name, context)
+        
+        @method_decorator(login_required, name='post')
+        def post(self, request, template_id):
+            if 'Delete' in request.POST:
+                    return self.delete_entry(template_id)
+            if template_id is None:
+                instance = None
+            else:
+                try:
+                    instance = Template.objects.get(id=template_id)
+                except:
+                    raise Http404("Trying to save a template that does not exist.")
+            form_class = self.form_class
+            form = form_class(request.POST, instance=instance)
+            if form.is_valid():
+                instance = form.save(commit=False)
+                instance.author = request.user
+                instance.save()
+                return HttpResponseRedirect(reverse('blogging:manage/template', 
+                                            kwargs={"template_id":instance.id}))
+            else:
+                context  ={'template': form}
+                return render(request, self.template_name, context, status = 400)
+        
+        def delete_entry(self, template_id):
+            if template_id is None:
+                return HttpResponseRedirect(reverse('blogging:manage/template'))
+            else:
+                Template.objects.get(id=template_id).delete()
+                return HttpResponseRedirect(reverse('blogging:manage/template'))
