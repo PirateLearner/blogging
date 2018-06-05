@@ -21,5 +21,6 @@ urlpatterns = [
 
 if blog_settings.USE_TEMPLATES:
     urlpatterns.insert(1, 
-                   re_path(r'manage/template/(?:(?P<template_id>\d+)/)?edit/$', 
-                       views.TemplateView.as_view(), name='manage/template'))
+                   re_path(r'^template/(?:(?P<template_id>\d+)/)?edit/$', 
+                           views.TemplateView.as_view(), 
+                           name='template'))

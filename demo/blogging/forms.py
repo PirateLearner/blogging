@@ -45,4 +45,28 @@ if blog_settings.USE_TEMPLATES:
     class TemplateForm(forms.ModelForm):
         class Meta:
             model = Template
-            fields = '__all__'
+            exclude = ('author',)
+        
+        def is_valid(self):
+            '''
+            Validate the JSON is well formed.
+            Validate that the eventual filename that will be created does not 
+            already exist, and if it is an update, then it already exists. 
+            (How will we do that?):
+            - Have a field 'raw_name' in the file that contains the original
+              name that the user had asked for. If it is the same, then we are
+              updating.
+            '''
+            if super(forms.ModelForm, self).is_valid():
+                import json
+                try:
+                    json.loads(self.cleaned_data.get('fields'))
+                except:
+                    self.errors['detail'] = "malformed JSON"
+                    return False
+                from blogging.factory import CreateTemplate as T
+                if( T.file_exists(self.cleaned_data.get('name'))):
+                    self.errors['detail'] = "File already exists"
+                    return False
+                return True
+            return False

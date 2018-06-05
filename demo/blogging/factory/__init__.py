@@ -209,7 +209,7 @@ class CreateTemplate(object):
         text += "  "*indent+"exclude="+str(ManageForm.Meta.exclude)+"+("
         for member in restrict_output_for:
             text += "'"+member+"',"
-        text += ")\n"
+        text += ")+('author',)\n"
         
         #Enhance __init__ if data is provided, we need to do some field jugglery
         text += "\n"
@@ -217,10 +217,20 @@ class CreateTemplate(object):
                                 " instance=None, **kwargs):\n"
         #If data is provided (saving form data?), create a 'text' field to 
         #create a model instance. It can be blank, we will be saving it eventually
+        text += "  "*indent+"initial = {} if initial is None else initial\n"
         text +="  "*indent+"if data is not None:\n"+\
                "   "*indent+"data['text'] = ''\n"
-        text +="  "*indent+"super().__init__(*args, data, initial, instance, "+\
-                            "**kwargs)\n"
+        text += "  "*indent+"if instance is not None:\n"
+        for member in self.members:
+            for key,value in member.items():
+                if key.lower() in reserved_keywords:
+                    continue
+                text += "   "*indent+"initial['"+key.lower()+\
+                        "'] = json.loads(instance.text).get('"+key.lower()+"', None)\n"
+        text +="  "*indent+"super("+form_name+", self).__init__(*args, "+\
+                    "data=data, instance=instance, initial=initial,"+\
+                    "**kwargs)\n"
+        
         #If instance was also provided (Updating stuff?))
         
         #Enhance save method
@@ -233,10 +243,18 @@ class CreateTemplate(object):
             for key,value in member.items():
                 if key.lower() in reserved_keywords:
                     continue
-                text += "  "*indent+"post_content['"+key.lower()+"']= "+\
+                text += "  "*indent+"try:\n"
+                text += "   "*indent+"post_content['"+key.lower()+"']= "+\
                             "self.cleaned_data.get('"+key.lower()+"',"+\
-                            " self.instance."+key.lower()+")\n"
-        text += "  "*indent+"self.instance.text = json_dumps(post_content)\n"
+                            " json.loads(self.instance.text).get('"+\
+                            key.lower()+"'))\n"
+                text += "  "*indent+"except:\n"
+                #text += "   "*indent+"print('Exception')\n"
+                text += "   "*indent+"post_content['"+key.lower()+"']= "+\
+                            "self.cleaned_data.get('"+key.lower()+"',None)\n"
+                            
+        text += "  "*indent+"self.instance.text = json.dumps(post_content)\n"
+        #text += "  "*indent+"print(self.instance.text)\n"
         text += "  "*indent+"return super().save(*args, **kwargs)"
         
         return text

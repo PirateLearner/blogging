@@ -33,6 +33,9 @@ if blog_settings.USE_TEMPLATES is True:
             except:
                 raise ValidationError("Check JSON validity (are you passing a"+
                                       " dict, or a string?")
+                
+        def __str__(self):
+            return self.name
 
 class AbstractContent(models.Model):
     """

@@ -9,6 +9,7 @@ from django.db.models import Q
 
 from blogging.settings import blog_settings
 
+import json 
 if blog_settings.USE_POLICY:
     from blogging.models import Policy
     
@@ -112,21 +113,26 @@ class EditView(View):
     def get(self, request, blog_id):
         user = request.user
         form_class = self.form_class
+        try:
+            instance=Content.objects.get(id=blog_id) if blog_id is not None else None
+        except Content.DoesNotExist:
+            raise Http404("Trying to edit an entry that does not exist.")
+
         if blog_settings.USE_TEMPLATES:
-            template_str = request.GET.get('template', None)
+            template_str = request.GET.get('template', None) if instance is None else None
+            template = None
             if template_str is not None:
                 template = Template.objects.get(name=template_str)
-                form_name = CreateTemplate.get_form_name(template)
+            elif instance is not None:
+                template = instance.template
+            
+            if template is not None:
+                form_name = CreateTemplate.get_form_name(template.name)
                 module = import_module('blogging.custom.'+\
-                            CreateTemplate.get_file_name(template))
+                            CreateTemplate.get_file_name(template.name))
                 form_class = getattr(module, form_name)
-        if blog_id is None:
-            form = form_class(initial = {'author': user})
-        else:
-            try:
-                form = form_class(instance=Content.objects.get(id=blog_id))
-            except Content.DoesNotExist:
-                raise Http404("Trying to edit an entry that does not exist.")
+        
+        form = form_class(instance = instance)
         context={"entry": form}
         return render(request, self.template_name, context)
     
@@ -143,14 +149,15 @@ class EditView(View):
                 raise Http404("Trying to save an entry that does not exist.")
         form_class = self.form_class
         if blog_settings.USE_TEMPLATES:
-            template_str = request.POST.get('template', None)
-            if template_str is not None:
-                template = Template.objects.get(name=template_str)
-                form_name = CreateTemplate.get_form_name(template)
+            template_id = request.POST.get('template', None)
+            if template_id is not None:
+                template = Template.objects.get(id=template_id)
+                form_name = CreateTemplate.get_form_name(template.name)
                 module = import_module('blogging.custom.'+\
-                            CreateTemplate.get_file_name(template))
+                            CreateTemplate.get_file_name(template.name))
                 form_class = getattr(module, form_name)
-        form = form_class(request.POST, instance=instance)
+        form = form_class(data=request.POST.copy(), instance=instance, 
+                          initial={'author':request.user})
         if form.is_valid():
             instance = form.save(commit=False)
             instance.author = request.user
@@ -211,7 +218,7 @@ if blog_settings.USE_TEMPLATES:
             user = request.user
             form_class = self.form_class
             if template_id is None:
-                form = form_class(initial = {'author': user})
+                form = form_class()
             else:
                 try:
                     form = form_class(instance=Template.objects.get(id=
@@ -235,10 +242,13 @@ if blog_settings.USE_TEMPLATES:
             form_class = self.form_class
             form = form_class(request.POST, instance=instance)
             if form.is_valid():
+                template = CreateTemplate(name=form.cleaned_data.get('name'),
+                          members = json.loads(form.cleaned_data.get('fields')))
+                template.save()
                 instance = form.save(commit=False)
                 instance.author = request.user
                 instance.save()
-                return HttpResponseRedirect(reverse('blogging:manage/template', 
+                return HttpResponseRedirect(reverse('blogging:template', 
                                             kwargs={"template_id":instance.id}))
             else:
                 context  ={'template': form}
@@ -246,7 +256,7 @@ if blog_settings.USE_TEMPLATES:
         
         def delete_entry(self, template_id):
             if template_id is None:
-                return HttpResponseRedirect(reverse('blogging:manage/template'))
+                return HttpResponseRedirect(reverse('blogging:template'))
             else:
                 Template.objects.get(id=template_id).delete()
-                return HttpResponseRedirect(reverse('blogging:manage/template'))
+                return HttpResponseRedirect(reverse('blogging:template'))

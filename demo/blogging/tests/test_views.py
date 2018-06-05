@@ -6,7 +6,7 @@ Created on 14-Mar-2018
 from django.test import TestCase
 
 from blogging import views, models
-from blogging.forms import ContentForm
+from blogging.forms import ContentForm, TemplateForm
 
 from django.contrib.auth.models import User
 
@@ -661,11 +661,32 @@ if blog_settings.USE_TEMPLATES:
             if(CreateTemplate.file_exists('Blogging')):
                 #pass
                 os.remove(CreateTemplate.get_full_file_path(
-                                     CreateTemplate.get_file_name("Blogging")))
+                                    CreateTemplate.get_file_name("Blogging")))
+
+        def test_resolve_edit_page(self):
+            found = resolve('/blogging/template/edit/')
+            self.assertEqual(found.func.__name__, 
+                             views.TemplateView.as_view().__name__, 
+                             "The views are dissimilar")
         
-        def test_create_new_template(self):
+        def test_template_used(self):
+            self.client.login(username=self.user.username, 
+                              password=self.password)
+            response = self.client.get('/blogging/template/edit/')
+            self.assertTemplateUsed(response, 'blogging/template.html')
             
-            self.client.force_authenticate(user=self.user)
+        def test_form_class(self):
+            self.client.login(username=self.user.username, 
+                              password=self.password)
+            response = self.client.get('/blogging/template/edit/')
+            self.assertIsInstance(response.context['template'], 
+                                  TemplateForm, 
+                                  "The two forms are not the same types")
+            
+        def test_create_new_template(self):
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             name = 'Blogging'
             layout = [{'title': {'type': 'CharField',
@@ -676,16 +697,17 @@ if blog_settings.USE_TEMPLATES:
                        },
                       ]
             
-            response = self.client.post('/content/template/', 
-                                        {'name':name,
+            response = self.client.post('/blogging/template/edit/', 
+                                        data={'name':name,
                                          'fields': json.dumps(layout),
-                                         })
-            
-            response.render() #Must be called before anything happens
-            self.assertContains(response,
-                                text='OK',
-                                count=0,
-                                status_code=201)
+                                         },
+                                        follow = True)
+            self.assertRedirects(response, 
+                             expected_url= reverse('blogging:template', 
+                                                   kwargs={'template_id':1}), 
+                             status_code=302, 
+                             target_status_code=200,
+                             fetch_redirect_response=True)
             
             qs = Template.objects.all()
             
@@ -697,16 +719,18 @@ if blog_settings.USE_TEMPLATES:
             os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
         
         def test_create_duplicate_template_fails(self):
-            self.client.force_authenticate(user=self.user)
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             name = 'Blogging'
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}}]
             
-            response = self.client.post('/content/template/', 
-                                        {'name':name,
-                                         'fields': json.dumps(layout),
-                                         })
+            response = self.client.post('/blogging/template/edit/', 
+                                        data={'name':name,
+                                              'fields': json.dumps(layout),
+                                              })
             
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}},
@@ -715,11 +739,10 @@ if blog_settings.USE_TEMPLATES:
                                             }
                                   }]
             
-            response = self.client.post('/content/template/', 
-                                        {'name':'blogging',
+            response = self.client.post('/blogging/template/edit/', 
+                                        data={'name':'blogging',
                                          'fields': json.dumps(layout),
                                          })
-            response.render() #Must be called before anything happens
             self.assertContains(response,
                                 text='OK',
                                 count=0,
@@ -736,9 +759,10 @@ if blog_settings.USE_TEMPLATES:
                                      CreateTemplate.get_file_name(name)))
             
         
-        #@skip("Testing")
-        def test_create_entry_with_template(self):
-            self.client.force_authenticate(user=self.user)
+        def test_get_template_form(self):
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}},
@@ -748,8 +772,33 @@ if blog_settings.USE_TEMPLATES:
                        }]
             
             name = 'Blogging'
-            self.client.post('/content/template/', 
-                                        {'name':name,
+            self.client.post('/blogging/template/edit/', 
+                                        data={'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            response = self.client.get('/blogging/edit/?template=Blogging')
+            #TODO Do some checks if the body contains the 'Body' field
+            #print(response.content)
+            
+            os.remove(CreateTemplate.get_full_file_path(
+                                     CreateTemplate.get_file_name(name)))
+
+
+        def test_create_entry_with_template(self):
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                 'extra': None
+                                 }
+                       }]
+            
+            name = 'Blogging'
+            self.client.post('/blogging/template/edit/', 
+                                        data={'name':name,
                                          'fields': json.dumps(layout),
                                          })
             module_name = 'blogging.custom.'+\
@@ -759,18 +808,22 @@ if blog_settings.USE_TEMPLATES:
             from importlib import import_module
             module = import_module(module_name)
             
-            serializer_name = CreateTemplate.get_manage_serializer_name(name)
-            serializer = getattr(module, serializer_name)
+            form_name = CreateTemplate.get_form_name(name)
+            form = getattr(module, form_name)
             
             #Loaded, now try to create
-            ser_obj = serializer(data = {'title': 'Test Post',
-                                        'body': 'This is a test post!',
-                                        'policy': [{'policy': 'PUB'}]})
+            form_obj = form(data={'title': 'Test Post',
+                            'body': 'This is a test post!',
+                            'policy': [{'policy': 'PUB'}]},
+                            initial={'author': self.user})
             
-            if ser_obj.is_valid():
-                ser_obj.save(author=self.user)
-            
-            #print(ser_obj.errors)
+            if form_obj.is_valid():
+                obj = form_obj.save(commit=False)
+                obj.author = self.user
+                obj.save()
+            else:
+                print('Not valid')
+            print(form_obj.errors)
             
             mod_obj = models.Content.objects.get(id=1)
             #print(json.loads(mod_obj.text))
@@ -779,9 +832,10 @@ if blog_settings.USE_TEMPLATES:
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
         
-        #@skip('Developing')
         def test_create_entry_with_template_from_client(self):
-            self.client.force_authenticate(user=self.user)
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}},
@@ -791,24 +845,25 @@ if blog_settings.USE_TEMPLATES:
                        }]
             
             name = 'Blogging'
-            self.client.post('/content/template/', 
+            self.client.post('/blogging/template/edit/', 
                                         {'name':name,
                                          'fields': json.dumps(layout),
                                          })
             module_name = 'blogging.custom.'+\
                                     CreateTemplate.get_file_name(name)
             
-            response = self.client.post('/content/manage/', 
-                                        {'title':'Test Post',
-                                         'body': 'Data in test post',
-                                         'template': 1,
-                                        'policy': [{'policy': 'PUB'}]})
-            response.render() #Must be called before anything happens
+            response = self.client.post('/blogging/edit/', 
+                                         data={'title':'Test Post',
+                                               'body': 'Data in test post',
+                                               'template': 1,
+                                               'Save': 'Save'},
+                                         follow = True)
+            
             #print(response.content)
             self.assertContains(response,
                                 text='OK',
                                 count=0,
-                                status_code=201)
+                                status_code=200)
             
             obj = models.Content.objects.get(id=1)
             self.assertNotEqual(obj, None, "No valid object returned.")
@@ -817,7 +872,9 @@ if blog_settings.USE_TEMPLATES:
                                     CreateTemplate.get_file_name(name)))
 
         def test_fetch_entry_for_editing(self):
-            self.client.force_authenticate(user=self.user)
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}},
@@ -827,37 +884,28 @@ if blog_settings.USE_TEMPLATES:
                        }]
             
             name = 'Blogging'
-            self.client.post('/content/template/', 
+            self.client.post('/blogging/template/edit/', 
                                         {'name':name,
                                          'fields': json.dumps(layout),
                                          })
-            module_name = 'blogging.custom.'+\
-                                    CreateTemplate.get_file_name(name)
-            self.client.post('/content/manage/', 
-                                {'title':'Test Post',
+            
+            self.client.post('/blogging/edit/', 
+                            data= {'title':'Test Post',
                                  'body': 'Data in test post',
                                  'template': 1,
                                  })
             
-            response = self.client.get('/content/manage/1/')
-            response.render()
+            response = self.client.get('/blogging/1/edit/')
             
-            content = json.loads(response.content)
-            self.assertEqual(content.get('title'), 
-                             'Test Post', 
-                             "Titles are not equal")
-            self.assertEqual(content.get('body'), 
-                             'Data in test post', 
-                             "Body is not equal")
-            self.assertEqual(content.get('template'), 
-                             1, 
-                             "Templates are not same")
+            #print(response.content)
             
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
             
         def test_edit_entry(self):
-            self.client.force_authenticate(user=self.user)
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
             
             layout = [{'title': {'type': 'CharField',
                                      'extra': {'max_length': 100}}},
@@ -867,42 +915,30 @@ if blog_settings.USE_TEMPLATES:
                        }]
             
             name = 'Blogging'
-            self.client.post('/content/template/', 
+            self.client.post('/blogging/template/edit/', 
                                         {'name':name,
                                          'fields': json.dumps(layout),
                                          })
-            module_name = 'blogging.custom.'+\
-                                    CreateTemplate.get_file_name(name)
-            self.client.post('/rest/content/manage/', 
+
+            self.client.post('/blogging/edit/', 
                                 {'title':'Test Post',
                                  'body': 'Data in test post',
                                  'template': 1,
-                                 'policy': [{'policy': 'PUB'}]})
-            
-            response = self.client.get('/content/manage/1/')
-            response.render()
-            
-            #content = json.loads(response.content)
-            #print(content)
-            self.client.post('/content/manage/1/', 
-                                {'title':'Test Post Edit',
-                                 'body': 'Edited text',
                                  })
             
-            response = self.client.get('/content/manage/1/')
-            response.render()
+            #response = self.client.get('/blogging/1/edit/')
             
-            content = json.loads(response.content)
-            #print(content)
-            self.assertEqual(content.get('title'), 
-                             'Test Post Edit', 
-                             "Titles are not equal")
-            self.assertEqual(content.get('body'), 
-                             'Edited text', 
-                             "Body is not equal")
-            self.assertEqual(content.get('template'), 
-                             1, 
-                             "Templates are not same")
+            response = self.client.post('/blogging/1/edit/', 
+                                data={'title':'Test Post Edit',
+                                     'body': 'Edited text',
+                                     'template': 1,
+                                     })
             
+            response = self.client.get('/blogging/1/edit/')
+            
+            #print(response.content)
             os.remove(CreateTemplate.get_full_file_path(
-                                    CreateTemplate.get_file_name(name)))        
+                                    CreateTemplate.get_file_name(name)))
+            
+        def test_edit_entry_with_deleted_template(self):
+            pass
