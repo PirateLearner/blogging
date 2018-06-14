@@ -20,7 +20,8 @@ if blog_settings.USE_TEMPLATES is True:
                                    null = True,
                                    on_delete = models.SET_NULL,
                                    related_name="template")
-            
+        create_date = models.DateTimeField(auto_now_add = True)
+        
         def save(self, *args, **kwargs):
             '''
             Ensure that the fields are saved as a valid JSON.

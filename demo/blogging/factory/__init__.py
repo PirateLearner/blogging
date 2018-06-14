@@ -38,7 +38,7 @@ form_typemap = {
                           'extra': None,
                           }
             }
-
+import os
 def field_options_expand(value, dictionary = serializer_typemap):
     field = dictionary[value]
     #text = field.get('name')+'('
@@ -89,6 +89,12 @@ class CreateTemplate(object):
         if path.isfile(cls.get_full_file_path(name)):
             return True
         return False
+
+    @classmethod
+    def backup_file(cls, name):
+        from time import time
+        name = cls.get_full_file_path(name)
+        os.rename(name, name+'_'+str(time()))
 
     @classmethod
     def get_serializer_name(cls, name):
@@ -434,19 +440,28 @@ class CreateTemplate(object):
         At this point, if we are overwriting, we actually meant to do so.
         '''
         file_path = self.get_full_file_path(self.get_file_name(self.name))
-        fd = open(file_path, 'w')
-        
-        fd.write("raw_name = '"+self.name+"'\n")
-        fd.write(self.create_model_imports())
-        #fd.write(self.create_model_block(indent=0))
-        fd.write(self.create_serializer_imports())
-        fd.write(self.create_content_serializer_block(indent=0))
-        fd.write(self.create_manage_serializer_block(indent=0))
-        
-        fd.write(self.create_form_imports())
-        fd.write(self.create_form_block(indent=0))
-        
-        fd.close()
+
+        try:
+            if( self.file_exists(self.name)):
+                self.backup_file(self.name)
+            fd = open(file_path, 'w')
+            
+            fd.write("raw_name = '"+self.name+"'\n")
+            fd.write(self.create_model_imports())
+            #fd.write(self.create_model_block(indent=0))
+            fd.write(self.create_serializer_imports())
+            fd.write(self.create_content_serializer_block(indent=0))
+            fd.write(self.create_manage_serializer_block(indent=0))
+            
+            fd.write(self.create_form_imports())
+            fd.write(self.create_form_block(indent=0))
+            
+            fd.close()
+            return True
+        except:
+            if CreateTemplate.file_exists(self.name):
+                os.remove(file_path)
+            return False
 #         print (self.name)
 #         print (self.create_model_imports())
 #         print (self.create_model_block(indent=0))

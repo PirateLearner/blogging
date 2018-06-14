@@ -64,9 +64,9 @@ if blog_settings.USE_TEMPLATES:
                 except:
                     self.errors['detail'] = "malformed JSON"
                     return False
-                from blogging.factory import CreateTemplate as T
-                if( T.file_exists(self.cleaned_data.get('name'))):
-                    self.errors['detail'] = "File already exists"
-                    return False
+#                 from blogging.factory import CreateTemplate as T
+#                 if( T.file_exists(self.cleaned_data.get('name'))):
+#                     self.errors['detail'] = "File already exists"
+#                     return False
                 return True
             return False

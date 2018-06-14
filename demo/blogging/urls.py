@@ -24,3 +24,7 @@ if blog_settings.USE_TEMPLATES:
                    re_path(r'^template/(?:(?P<template_id>\d+)/)?edit/$', 
                            views.TemplateView.as_view(), 
                            name='template'))
+    urlpatterns.insert(1, 
+                   re_path(r'^template/$', 
+                           views.manage_templates,
+                           name='template/list'))

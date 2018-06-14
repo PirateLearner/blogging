@@ -244,13 +244,18 @@ if blog_settings.USE_TEMPLATES:
             if form.is_valid():
                 template = CreateTemplate(name=form.cleaned_data.get('name'),
                           members = json.loads(form.cleaned_data.get('fields')))
-                template.save()
-                instance = form.save(commit=False)
-                instance.author = request.user
-                instance.save()
-                return HttpResponseRedirect(reverse('blogging:template', 
+                if template.save():
+                    instance = form.save(commit=False)
+                    instance.author = request.user
+                    instance.save()
+                    return HttpResponseRedirect(reverse('blogging:template', 
                                             kwargs={"template_id":instance.id}))
+                else:
+                    context  ={'template': form}
+                    return render(request, self.template_name, context, status = 400)
             else:
+                print('Form not valid')
+                print(form.errors)
                 context  ={'template': form}
                 return render(request, self.template_name, context, status = 400)
         

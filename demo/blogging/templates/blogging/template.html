@@ -1,13 +1,14 @@
 {% extends "blogging/base.html" %}
+{% load static %}
 {% block content %}
 <h3>Create Template</h3>
 <div>
   {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-  <form action="." method="post">
+  <form action="." method="post" id="template_form">
     {% csrf_token %}
       {% for field in template %}
-      <div>
+      <div id="div_{{ field.name }}">
         {{ field.errors }}
         {{ field.label_tag }}{{ field }}
       </div>
@@ -15,8 +16,12 @@
       {% for field in template.hidden_fields %}
         {{ field.label_tag }}{{ field }}
       {% endfor %}
-    <input type="submit" value="Save" name="Save"/>
-    <input type="submit" value="Delete" name="Delete"/>
+    <input type="submit" value="Save" name="Save" id="save_btn"/>
+    <input type="submit" value="Delete" name="Delete" id="del_btn"/>
   </form>
 </div>
+{% endblock %}
+{% block js %}
+<script src="{% static "js/blogging.js" %}" ></script>
+<script src="{% static "js/template.js" %}" ></script>
 {% endblock %}
