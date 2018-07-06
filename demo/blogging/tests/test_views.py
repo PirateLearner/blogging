@@ -717,7 +717,72 @@ if blog_settings.USE_TEMPLATES:
                 self.assertEqual(obj.name, name, "Improper name saved in DB")
             
             os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
-        
+
+        def test_edit_existing_template(self):
+            self.assertTrue(self.client.login(username=self.user.username, 
+                                          password=self.password),
+                                          "Login not successful")
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
+            
+            response = self.client.post('/blogging/template/edit/', 
+                                        data={'name':name,
+                                         'fields': json.dumps(layout),
+                                         },
+                                        follow = True)
+            self.assertRedirects(response, 
+                             expected_url= reverse('blogging:template', 
+                                                   kwargs={'template_id':1}), 
+                             status_code=302, 
+                             target_status_code=200,
+                             fetch_redirect_response=True)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "One DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+                
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      {'another' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
+            
+            response = self.client.post('/blogging/template/'+str(obj.id)+'/edit/', 
+                                        data={'name':name,
+                                         'fields': json.dumps(layout),
+                                         },
+                                        follow = True)
+            self.assertRedirects(response, 
+                             expected_url= reverse('blogging:template', 
+                                                   kwargs={'template_id':1}), 
+                             status_code=302, 
+                             target_status_code=200,
+                             fetch_redirect_response=True)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "One DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+                
+            os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
+
         def test_create_duplicate_template_fails(self):
             self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),

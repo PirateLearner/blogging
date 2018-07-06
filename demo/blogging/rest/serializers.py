@@ -52,6 +52,7 @@ if blog_settings.USE_TEMPLATES:
                 if self.instance is None:
                     from blogging.factory import CreateTemplate as T
                     if( T.file_exists(self.validated_data.get('name'))):
+                        print('File exists')
                         self.errors['detail'] = "File already exists"
                         return False
                 return True

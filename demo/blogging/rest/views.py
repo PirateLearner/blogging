@@ -31,6 +31,8 @@ from django.utils import timezone
 from blogging.factory import CreateTemplate
 from importlib import import_module
 
+import json
+        
 class ContentView(viewsets.ViewSet):
     http_method_names = ['get', 'head']
     
@@ -231,8 +233,6 @@ class TemplateView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def create(self, request, format=None):
-        from blogging.factory import CreateTemplate
-        import json
         serializer = TemplateSerializer(data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
@@ -245,11 +245,32 @@ class TemplateView(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, pk, format=None):
-        obj = self.get_object(pk)
+        obj = self.get_object()
+        serializer = TemplateSerializer(instance=obj, data=request.data, 
+                                       context={'request':request})
+        if serializer.is_valid():
+            template = CreateTemplate(name=serializer.validated_data.get('name'),
+                                      members = json.loads(serializer.validated_data.get('fields')))
+            template.save()
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request, pk, format=None):
+        return self.update(request, pk, format)
+    
+    def partial_update(self, request, pk, format=None):
+        print('Partial Here')
+        obj = self.get_object()
         serializer = TemplateSerializer(instance=obj, data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, pk, format=None):
+        obj = self.get_object()
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     

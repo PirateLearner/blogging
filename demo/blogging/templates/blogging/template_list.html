@@ -1,4 +1,5 @@
 {% extends "blogging/base.html" %}
+{% load static %}
 {% block content %}
 {% if templates %}
   <ul>
@@ -17,4 +18,9 @@
 {% else %}
 <h3>No templates have been created!</h3>
 {% endif %}
+{% endblock %}
+
+{% block js %}
+<script src="{% static "js/blogging.js" %}" ></script>
+<script src="{% static "js/template.js" %}" ></script>
 {% endblock %}

@@ -57,3 +57,4 @@ target/
 .pydevproject
 .settings
 */db.sqlite3
+demo/blogging/custom/*

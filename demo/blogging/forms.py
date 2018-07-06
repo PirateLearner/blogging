@@ -19,7 +19,9 @@ class ContentForm(forms.ModelForm):
     
     class Meta:
         model = Content
-        fields = ['title', 'text']
+        fields = ['title', 'text',]
+        if blog_settings.USE_TEMPLATES is True:
+            fields += ['template',]
         
     def is_valid(self):
         if (forms.ModelForm.is_valid(self)):
@@ -64,9 +66,11 @@ if blog_settings.USE_TEMPLATES:
                 except:
                     self.errors['detail'] = "malformed JSON"
                     return False
-#                 from blogging.factory import CreateTemplate as T
-#                 if( T.file_exists(self.cleaned_data.get('name'))):
-#                     self.errors['detail'] = "File already exists"
-#                     return False
+                if self.instance.id is None:
+                    from blogging.factory import CreateTemplate as T
+                    if( T.file_exists(self.cleaned_data.get('name'))):
+                        self.errors['detail'] = ":File already exists"
+                        return False
+                    return True
                 return True
             return False

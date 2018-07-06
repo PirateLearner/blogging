@@ -635,7 +635,71 @@ if blog_settings.USE_TEMPLATES:
                 self.assertEqual(obj.name, name, "Improper name saved in DB")
             
             os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
-        
+
+        def test_edit_existing_template(self):
+            
+            self.client.force_authenticate(user=self.user)
+            
+            name = 'Blogging'
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
+            
+            response = self.client.post('/rest/content/template/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            response.render() #Must be called before anything happens
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=status.HTTP_201_CREATED)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "Only one DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+            
+            layout = [{'title': {'type': 'CharField',
+                                     'extra': {'max_length': 100}}},
+                      {'body' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      {'another' : {'type': 'TextField',
+                                'extra': None
+                                }
+                       },
+                      ]
+            
+            response = self.client.post('/rest/content/template/'+str(obj.id)+'/', 
+                                        {'name':name,
+                                         'fields': json.dumps(layout),
+                                         })
+            
+            response.render() #Must be called before anything happens
+            
+            self.assertContains(response,
+                                text='OK',
+                                count=0,
+                                status_code=status.HTTP_200_OK)
+            
+            qs = Template.objects.all()
+            
+            self.assertEqual(qs.count(), 1, "Only one DB entry must exist")
+            
+            for obj in qs:
+                self.assertEqual(obj.name, name, "Improper name saved in DB")
+                
+            os.remove(CreateTemplate.get_full_file_path(CreateTemplate.get_file_name(name)))
+            
         def test_create_duplicate_template_fails(self):
             self.client.force_authenticate(user=self.user)
             

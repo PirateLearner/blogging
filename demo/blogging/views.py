@@ -150,6 +150,8 @@ class EditView(View):
         form_class = self.form_class
         if blog_settings.USE_TEMPLATES:
             template_id = request.POST.get('template', None)
+            if template_id is not None and len(template_id) == 0:
+                template_id = None
             if template_id is not None:
                 template = Template.objects.get(id=template_id)
                 form_name = CreateTemplate.get_form_name(template.name)
@@ -254,8 +256,8 @@ if blog_settings.USE_TEMPLATES:
                     context  ={'template': form}
                     return render(request, self.template_name, context, status = 400)
             else:
-                print('Form not valid')
-                print(form.errors)
+                #print('Form not valid')
+                #print(form.errors)
                 context  ={'template': form}
                 return render(request, self.template_name, context, status = 400)
         
