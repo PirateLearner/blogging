@@ -59,10 +59,20 @@ if blog_settings.USE_TEMPLATES:
             return False
 
 class ContentSerializer(serializers.HyperlinkedModelSerializer):
+    '''
+    This is the public serializer. The content that is meant for public 
+    consumption (read-only) is sent via this serializer.
+    
+    '''
     author = HyperlinkedRelatedField(queryset=User.objects.all(), 
                                      view_name='user-detail',
                                      required = False)
     text = CharField(style={'base_template': 'textarea.html'}, required=False)
+    
+    if blog_settings.USE_TEMPLATES is True:
+        template = HyperlinkedRelatedField(queryset=Template.objects.all(), 
+                                     view_name='content/template-detail',
+                                     required = False)
     class Meta:
         model = Content
         #fields = ('url', 'id', 'title', 'text', 'author', 

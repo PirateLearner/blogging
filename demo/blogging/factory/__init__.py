@@ -120,6 +120,7 @@ class CreateTemplate(object):
     def get_model_name(cls, name):
         return cls.sanitize_name(name)+"Model"
     
+    
     def __init__(self, name, members):
         self.name = name
         self.members = members #Members is a list of dictionary items
@@ -433,6 +434,45 @@ class CreateTemplate(object):
         text += "  "*indent+"return super().update(instance, validated_data)\n"
         return text
     
+    def create_render_block(self):
+        indent = 0
+        text = '\n\ndef render(text=None):\n'
+        indent +=4
+        
+        text += ' '*indent+"if text is None:\n"
+        indent +=4
+        text += ' '*indent+"return ''\n"
+        indent -=4
+        text += ' '*indent+"rendered_text = ''\n"
+        
+        text += ' '*indent+"try:\n"
+        indent +=4
+        text += ' '*indent+"text = json.loads(text)\n"+\
+                ' '*indent+"for next in ordered_members:\n"
+        indent +=4
+        text += ' '*indent+"rendered_text += text[next]\n"
+        indent -=4
+        
+        indent -= 4
+        text += ' '*indent+"except:\n"
+        text += '  '*indent+'pass\n'
+        
+        text += ' '*indent+'return rendered_text'
+        return text
+    
+    def create_list_of_members(self):
+        '''
+        Create an ordered list of members as the user placed them
+        '''
+        text = '['
+        for member in self.members:
+            for key, value in member.items():
+                if key.lower() in reserved_keywords:
+                    continue
+                text += "'"+key.lower()+"',"
+        text += ']'
+        return text
+    
     def save(self):
         '''
         Write to disk:
@@ -447,6 +487,7 @@ class CreateTemplate(object):
             fd = open(file_path, 'w')
             
             fd.write("raw_name = '"+self.name+"'\n")
+            fd.write("ordered_members = "+ self.create_list_of_members()+'\n')
             fd.write(self.create_model_imports())
             #fd.write(self.create_model_block(indent=0))
             fd.write(self.create_serializer_imports())
@@ -455,7 +496,7 @@ class CreateTemplate(object):
             
             fd.write(self.create_form_imports())
             fd.write(self.create_form_block(indent=0))
-            
+            fd.write(self.create_render_block())
             fd.close()
             return True
         except:
