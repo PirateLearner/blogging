@@ -91,13 +91,15 @@ def detail(request, blog_id):
     try:
         post = Content.objects.get(id=blog_id)
         if blog_settings.USE_TEMPLATES:
+            template = None
+            render_method = None
             if post.template is not None:
                 template = post.template
             if template is not None:
                 module = import_module('blogging.custom.'+\
                             CreateTemplate.get_file_name(template.name))
                 render_method = getattr(module, 'render')
-            post.text = render_method(post.text)
+                post.text = render_method(post.text)
         context = {"entry": post}
         return render(request, "blogging/detail.html", context)
     except Content.DoesNotExist:
