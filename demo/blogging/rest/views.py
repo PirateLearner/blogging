@@ -233,6 +233,7 @@ class TemplateView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     
     def create(self, request, format=None):
+        #print('Create')
         serializer = TemplateSerializer(data=request.data, 
                                        context={'request':request})
         if serializer.is_valid():
@@ -245,6 +246,7 @@ class TemplateView(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, pk, format=None):
+        #print('Update')
         obj = self.get_object()
         serializer = TemplateSerializer(instance=obj, data=request.data, 
                                        context={'request':request})
@@ -256,11 +258,18 @@ class TemplateView(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def post(self, request, pk, format=None):
+    def post(self, request, pk=None, format=None):
+        if pk==None:
+            return self.create(request, format)
         return self.update(request, pk, format)
+      
+#     def put(self, request, pk=None, format=None):
+#         if pk==None:
+#             return self.create(request, format)
+#         return self.update(request, pk, format)
     
     def partial_update(self, request, pk, format=None):
-        print('Partial Here')
+        #print('Partial Here')
         obj = self.get_object()
         serializer = TemplateSerializer(instance=obj, data=request.data, 
                                        context={'request':request})

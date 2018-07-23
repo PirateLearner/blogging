@@ -159,10 +159,12 @@ $(document).ready(function(){
 
     blogging.admin.template.api = {
         url: '/rest/content/template/',
+        save_method: 'POST',
         
         resetUrl: function()
         {
             blogging.admin.template.api.url = '/rest/content/template/';
+            blogging.admin.template.api.save_method='POST';
         },
         
         renderForm: function(id=0){
@@ -204,6 +206,7 @@ $(document).ready(function(){
                blogging.utils.get('/rest/content/template/'+id+'/', 
                                   blogging.admin.template.api.fillForm);
                blogging.admin.template.api.url += id+'/';
+               blogging.admin.template.api.save_method = 'PUT';
            }
         },
         
@@ -281,12 +284,11 @@ $(document).ready(function(){
                   }
               });
               
-              type = "PUT";
               //Save Form Data
               $.ajax({
                 cache: false,
                 url : blogging.admin.template.api.url,
-                type: type,
+                type: blogging.admin.template.api.save_method,
                 dataType : "json",
                 contentType: "application/json;",
                 data : JSON.stringify(form_data),
