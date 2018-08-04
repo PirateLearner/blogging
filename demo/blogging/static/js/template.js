@@ -298,6 +298,15 @@ $(document).ready(function(){
               });
             }
             return false;
+        },
+        
+        /**
+         * @brief Triggered on choosing a template on the content creation page.
+         * 
+         * Fetches the form rendered in the new template style
+         */
+        chooseTemplate: function(event){
+            
         }
     };
     

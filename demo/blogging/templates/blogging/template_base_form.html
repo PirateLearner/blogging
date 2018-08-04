@@ -1,0 +1,14 @@
+{% load rest_framework %}
+
+    {% if serializer is not None %}
+    <h3>Create Content</h3>
+    <span class="hidden sr-only" id="fieldOrder">
+        {% for field in ordering %}{% if not forloop.first %},{% endif %}{{ field }}{% endfor %}
+    </span>
+<form class="form" id="content_form">
+    {% render_form serializer %}
+    <input type="submit" value="Save" name="Save"/>
+    <input type="submit" value="Publish" name="Publish"/>
+    <input type="submit" value="Delete" name="Delete"/>
+</form>
+    {% endif %}

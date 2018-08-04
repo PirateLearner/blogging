@@ -888,7 +888,7 @@ if blog_settings.USE_TEMPLATES:
             
             #content = json.loads(response.content)
             #print(content)
-            self.client.post('/rest/content/manage/1/', 
+            self.client.put('/rest/content/manage/1/', 
                                 {'title':'Test Post Edit',
                                  'body': 'Edited text',
                                  })
@@ -910,3 +910,16 @@ if blog_settings.USE_TEMPLATES:
             
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
+            
+            
+        def test_get_template_form(self):
+            pass
+        
+        def test_change_template_from_none_in_edit(self):
+            pass
+        
+        def test_change_template_to_none_in_edit(self):
+            pass
+        
+        def test_change_template_not_none_in_edit(self):
+            pass

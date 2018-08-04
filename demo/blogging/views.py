@@ -117,7 +117,7 @@ from django.utils.decorators import method_decorator
 
 class EditView(View):
     form_class = ContentForm
-    template_name = "blogging/edit.html"
+    template_name = "blogging/edit_rest.html" if blog_settings.USE_REST else "blogging/edit.html"
     
     @method_decorator(login_required, name='get')
     def get(self, request, blog_id):

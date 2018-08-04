@@ -417,7 +417,10 @@ class CreateTemplate(object):
         
         #Update Method
         text += "\n"+" "*indent+"def update(self, instance, validated_data):\n"
-        text += "\n"+"  "*indent+"text = json.loads(instance.text)\n"
+        text += "\n"+"  "*indent+"try:"
+        text += "\n"+"   "*indent+"text = json.loads(instance.text)"
+        text += "\n"+"  "*indent+"except:"
+        text += "\n"+"   "*indent+"text = {}\n"
         text += "  "*indent+"post_content = {}\n" +\
                 "  "*indent+"post_content['pid_count'] = "+\
                 "text.get('pid_count', None)\n"

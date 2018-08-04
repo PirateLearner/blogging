@@ -472,7 +472,10 @@ class EditView(BaseTest):
         self.client.login(username=self.user.username, 
                           password=self.password)
         response = self.client.get('/blogging/edit/')
-        self.assertTemplateUsed(response, 'blogging/edit.html')
+        if blog_settings.USE_REST is False:
+            self.assertTemplateUsed(response, 'blogging/edit.html')
+        else:
+            self.assertTemplateUsed(response, 'blogging/edit_rest.html')
         
     def test_form_class(self):
         self.client.login(username=self.user.username, 
@@ -518,10 +521,11 @@ class EditView(BaseTest):
                              status_code=302, 
                              target_status_code=200,
                              fetch_redirect_response=True)
-        self.assertContains(response,
-                            text='This is a test post',
-                            count=1, 
-                            status_code=200)
+        if blog_settings.USE_REST is False:
+            self.assertContains(response,
+                                text='This is a test post',
+                                count=1, 
+                                status_code=200)
     
     def test_post_with_publish_redirects_to_detail(self):
         self.assertTrue(self.client.login(username=self.user.username, 
@@ -552,16 +556,17 @@ class EditView(BaseTest):
                                           password=self.password),
                                           "Login not successful")
         response = self.client.get('/blogging/{blog}/edit/'.format(blog=obj.id))
-        self.assertContains(response, 
-                            text="Post Edit 1", 
-                            count=1, 
-                            status_code=200, 
-                            html=False)
-        self.assertContains(response, 
-                            text="Content of post 1", 
-                            count=1, 
-                            status_code=200, 
-                            html=False)
+        if blog_settings.USE_REST is False:
+            self.assertContains(response, 
+                                text="Post Edit 1", 
+                                count=1, 
+                                status_code=200, 
+                                html=False)
+            self.assertContains(response, 
+                                text="Content of post 1", 
+                                count=1, 
+                                status_code=200, 
+                                html=False)
 
     def test_edit_already_created_post(self):
         obj = self._create_post(title="Post Edit 1", text="Content of post 1")
@@ -579,16 +584,18 @@ class EditView(BaseTest):
         self.assertNotContains(response, 
                                text="Content of post 1", 
                                status_code=200)
-        self.assertContains(response, 
-                            text="Altered title", 
-                            count=1, 
-                            status_code=200, 
-                            html=False)
-        self.assertContains(response, 
-                            text="Altered data", 
-                            count=1, 
-                            status_code=200, 
-                            html=False)
+        #Edit page no longer renders a form when doing it via rest
+        if blog_settings.USE_REST is False:
+            self.assertContains(response, 
+                                text="Altered title", 
+                                count=1, 
+                                status_code=200, 
+                                html=False)
+            self.assertContains(response, 
+                                text="Altered data", 
+                                count=1, 
+                                status_code=200, 
+                                html=False)
         
     def test_delete_post(self):
         obj = self._create_post(title="Post Edit 1", text="Content of post 1")
@@ -612,10 +619,11 @@ class EditView(BaseTest):
                                           'Publish':'Publish',
                                           },
                                     follow=True) #Follow redirect
-        self.assertContains(response, 
-                            text="Either title or content must be non-empty", 
-                            count=1, 
-                            status_code=400)
+        if blog_settings.USE_REST is False:
+            self.assertContains(response, 
+                                text="Either title or content must be non-empty", 
+                                count=1, 
+                                status_code=400)
     
     def test_post_without_title_with_text(self):
         self.assertTrue(self.client.login(username=self.user.username, 
@@ -967,7 +975,7 @@ if blog_settings.USE_TEMPLATES:
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
             
-        def test_edit_entry(self):
+        def test_edit_entry_using_post(self):
             self.assertTrue(self.client.login(username=self.user.username, 
                                           password=self.password),
                                           "Login not successful")
@@ -1004,6 +1012,11 @@ if blog_settings.USE_TEMPLATES:
             #print(response.content)
             os.remove(CreateTemplate.get_full_file_path(
                                     CreateTemplate.get_file_name(name)))
-            
+
+
         def test_edit_entry_with_deleted_template(self):
             pass
+        
+        def test_get_entry_render_using_template(self):
+            pass
+        

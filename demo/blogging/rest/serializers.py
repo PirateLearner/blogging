@@ -120,12 +120,13 @@ if blog_settings.USE_POLICY:
                             'entry': {'required': False}}
     
     class ManageSerializer(ContentSerializer):
-        policy = PolicySerializer(many=True)
+        policy = PolicySerializer(many=True, required=False)
         #policy = serializers.PrimaryKeyRelatedField(queryset = Policy.objects.all(),
         #                                            many = True)
         template = serializers.PrimaryKeyRelatedField(queryset = 
                                                       Template.objects.all(),
-                                                      required = False)
+                                                      required = False,
+                                                      allow_null=True)
         class Meta:
             model = Content
             exclude = ('is_active',)
@@ -139,12 +140,15 @@ if blog_settings.USE_POLICY:
             policy_data = validated_data.pop('policy', None)
             with transaction.atomic():
                 entry = Content.objects.create(**validated_data)
-                for policy in policy_data:
-                    entry.policy.create(**policy)
-                    #Policy.objects.create(entry=entry, **policy)
-                if len(policy_data) == 0:
+                if policy_data is not None:
+                    for policy in policy_data:
+                        entry.policy.create(**policy)
+                        #Policy.objects.create(entry=entry, **policy)
+                    if len(policy_data) == 0:
+                        entry.policy.create(policy='PUB')
+                        #Policy.objects.create(entry=entry, policy='PUB')
+                else:
                     entry.policy.create(policy='PUB')
-                    #Policy.objects.create(entry=entry, policy='PUB')
             return entry
         
         def update(self, instance, validated_data):
@@ -152,23 +156,26 @@ if blog_settings.USE_POLICY:
 
             instance.title = validated_data.get('title', instance.title)
             instance.text = validated_data.get('text', instance.text)
+            instance.template = validated_data.get('template', instance.template)
+            
             with transaction.atomic():
                 instance.save()
-                for policy_entry in policy_data:
-                    policy = instance.policy.get(policy=policy_entry.get('policy'))
-                    policy.start = policy_entry.get('start', policy.start)
-                    policy.end = policy_entry.get('end', policy.end)
-                    policy.save()
+                if policy_data is not None:
+                    for policy_entry in policy_data:
+                        policy = instance.policy.get(policy=policy_entry.get('policy'))
+                        policy.start = policy_entry.get('start', policy.start)
+                        policy.end = policy_entry.get('end', policy.end)
+                        policy.save()
             return instance
         
         def is_valid(self):
             if super().is_valid() is False:
                 return False
-            if self.instance is not None and \
-                self.validated_data.get('template', None) is not None:
-                if self.instance.id != \
-                        self.validated_data.get('template').id:
-                    return False
+#             if self.instance is not None and \
+#                 self.validated_data.get('template', None) is not None:
+#                 if self.instance.id != \
+#                         self.validated_data.get('template').id:
+#                     return False
             return True
                 
 else:
