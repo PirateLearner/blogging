@@ -138,7 +138,12 @@ $(document).ready(function(){
           }
           blogging.utils.get(url,
                              blogging.admin.renderForm,
-                             'html')
+                             'html');
+          /* Delegated events. Register only once. */
+          $('body').on('click', 'button[id="id_save_form"]', 'Save', blogging.admin.prepareSend);
+          $('body').on('click', 'button[id="id_publish_form"]', 'Publish', blogging.admin.prepareSend);
+          $('body').on('click', 'button[id="id_delete_form"]','Delete', blogging.admin.prepareSend);
+          return false;
         },
         /**
          * @brief Get form rendering information from the backend and render form
@@ -158,6 +163,7 @@ $(document).ready(function(){
           blogging.utils.get(url,
                              blogging.admin.renderForm,
                              'html')
+          return false;
         },
         
         /**
@@ -186,9 +192,7 @@ $(document).ready(function(){
               $('#overlay_inner').prepend(form.filter('span[id="fieldOrder"]'));
               $('#overlay_inner').append(blogging.admin.formatForm(form, ordering));
           }else{
-              $('body').off('click', 'button[id="id_save_form"]', 'Save', blogging.admin.prepareSend);
-              $('body').off('click', 'button[id="id_publish_form"]', 'Publish', blogging.admin.prepareSend);
-              $('body').off('click', 'button[id="id_delete_form"]','Delete', blogging.admin.prepareSend);
+              $('select[name="template"]').off('change', blogging.admin.getForm);
               prev_form.remove();
               
               $('#overlay_inner').find('span[id="fieldOrder"]').remove();
@@ -202,16 +206,16 @@ $(document).ready(function(){
           /* If possible, place data in new fields by evaluating their type. */
           $('select[name="template"]').on('change', blogging.admin.getForm);
           console.log($('button[id="id_save_form"]'));
-          $('body').on('click', 'button[id="id_save_form"]', 'Save', blogging.admin.prepareSend);
-          $('body').on('click', 'button[id="id_publish_form"]', 'Publish', blogging.admin.prepareSend);
-          $('body').on('click', 'button[id="id_delete_form"]','Delete', blogging.admin.prepareSend);
+          return false;
         },
         
         /**
          * @brief Prepare data to send request to server and dispatch request
          */
         prepareSend: function(event){
+            console.log(event);
             event.preventDefault();
+            event.stopPropagation();
             publish = false;
             
             if(event.data === 'Delete'){
@@ -375,6 +379,7 @@ $(document).ready(function(){
             username = "dummy";
             filter_string = '?user='+username;
             blogging.utils.get('/rest/content/manage/'+id+'/', blogging.admin.parseEntry);
+            return false;
         },
       
         /**
