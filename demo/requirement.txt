@@ -1,4 +1,4 @@
-Django==1.6.8
+Django==1.11.23
 
 django-classy-tags==0.4
 html5lib==1.0b1
