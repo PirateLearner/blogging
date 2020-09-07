@@ -14,14 +14,12 @@ if blog_settings.USE_POLICY:
     from blogging.models import Policy
 if blog_settings.USE_TEMPLATES:
     from blogging.models import Template
-from blogging.rest.serializers import (ContentSerializer, ManageSerializer, 
+from blogging.rest.serializers import (ContentSerializer, ManageSerializer,
                                        BulkAction, TemplateSerializer)
 
 from django.http import Http404
 
-from rest_framework.decorators import (list_route, 
-                                       detail_route,
-                                       action as _action)
+from rest_framework.decorators import action as _action
 
 from blogging.rest.permissions import IsAdminOrAuthor
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -37,7 +35,7 @@ from rest_framework.renderers import (TemplateHTMLRenderer, JSONRenderer, Browsa
 
 class ContentView(viewsets.ViewSet):
     http_method_names = ['get', 'head']
-    
+
     def get_queryset(self):
         username = self.request.query_params.get('author', None)
         pin = self.request.query_params.get('pins', None)
@@ -48,53 +46,53 @@ class ContentView(viewsets.ViewSet):
 
         if username is not None:
             queryset = queryset.filter(author__username=username)
-            
+
         return queryset
-    
+
     def list(self, request, format=None):
         queryset = self.get_queryset()
-        serializer = ContentSerializer(queryset, 
-                                       many=True, 
+        serializer = ContentSerializer(queryset,
+                                       many=True,
                                        context={'request':request})
         return Response(serializer.data)
-    
+
     def get_object(self, pk):
         try:
             if not blog_settings.USE_POLICY:
-                return Content.objects.filter(id=pk).filter(is_active=True) 
-            
+                return Content.objects.filter(id=pk).filter(is_active=True)
+
             return Content.objects.filter(id = pk).filter(Q(policy__policy=
                                 Policy.PUBLISH)& Q(policy__start__lte=
                                 timezone.now()) & (Q(policy__end__gt=
                                 timezone.now()) | Q(policy__end__isnull=True)))[0]
         except:
             raise Http404
-        
+
     def retrieve(self, request, pk, format=None):
         obj = self.get_object(pk)
-        serializer = ContentSerializer(instance=obj, 
+        serializer = ContentSerializer(instance=obj,
                                        context={'request':request})
         return Response(serializer.data)
-    
+
 class ManageView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         username = self.request.query_params.get('author', None)
         draft_only = self.request.query_params.get('drafts', None)
         publish_only = self.request.query_params.get('published', None)
         pin = self.request.query_params.get('pins', None)
-        
+
         if draft_only is not None and publish_only is not None:
             #Both are set, that implies get all
             draft_only = None
             publish_only = None
-            
+
         filtermap = {'author': Q(author__username=username),
-                     'draft' : Q(policy__policy=Policy.PUBLISH) & 
-                               ( Q(policy__start__isnull=True) | 
+                     'draft' : Q(policy__policy=Policy.PUBLISH) &
+                               ( Q(policy__start__isnull=True) |
                                  Q(policy__start__gt= timezone.now()) |
-                                 (  Q(policy__start__lte=timezone.now()) & 
+                                 (  Q(policy__start__lte=timezone.now()) &
                                     Q(policy__end__lt=timezone.now())
                                   )
                                 ),
@@ -106,9 +104,9 @@ class ManageView(viewsets.ViewSet):
                                 Policy.PIN)& Q(policy__start__lte=
                                 timezone.now()) & (Q(policy__end__gt=
                                 timezone.now()) | Q(policy__end__isnull=True)))}
-        
+
         queryset = Content.objects.all().order_by('-create_date')
-        
+
         if username is not None:
             queryset = queryset.filter(filtermap['author'])
         if pin is not None:
@@ -117,22 +115,22 @@ class ManageView(viewsets.ViewSet):
             queryset = queryset.filter(filtermap['draft'])
         elif publish_only is not None:
             queryset = queryset.filter(filtermap['published'])
-            
+
         return queryset
-    
+
     def get_permissions(self):
         if self.action == 'destroy':
             permission_classes = [permission() for permission in [IsAdminOrAuthor]]
         else:
             permission_classes = viewsets.ViewSet.get_permissions(self)
         return permission_classes
-    
+
     def list(self, request, format=None):
-        serializer = ManageSerializer(self.get_queryset(), 
-                                       many=True, 
+        serializer = ManageSerializer(self.get_queryset(),
+                                       many=True,
                                        context={'request':request})
         return Response(serializer.data)
-    
+
     #@list_route(['post'])
     @_action(methods=['post'], detail=False)
     def action(self, request, format=None):
@@ -143,7 +141,7 @@ class ManageView(viewsets.ViewSet):
             print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def create(self, request, format=None):
         template_id = request.data.get('template', None)
         if template_id is not None and len(template_id)>0:
@@ -153,13 +151,13 @@ class ManageView(viewsets.ViewSet):
                 module = import_module('blogging.custom.'+\
                             CreateTemplate.get_file_name(template))
                 serializer_obj = getattr(module, serializer_name)
-                serializer = serializer_obj(data=request.data, 
+                serializer = serializer_obj(data=request.data,
                                        context={'request':request})
             except:
-                return Response({'detail': "Template not found"}, 
+                return Response({'detail': "Template not found"},
                                 status=status.HTTP_400_BAD_REQUEST)
         else:
-            serializer = ManageSerializer(data=request.data, 
+            serializer = ManageSerializer(data=request.data,
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save(author=request.user)
@@ -171,7 +169,7 @@ class ManageView(viewsets.ViewSet):
             return Content.objects.get(pk = pk)
         except Content.DoesNotExist:
             raise Http404
-        
+
     def retrieve(self, request, pk, format=None):
         obj = self.get_object(pk)
         try:
@@ -181,14 +179,14 @@ class ManageView(viewsets.ViewSet):
                             CreateTemplate.get_file_name(template))
 
             serializer_obj = getattr(module, serializer_name)
-            
-            serializer = serializer_obj(instance=obj, 
+
+            serializer = serializer_obj(instance=obj,
                                        context={'request':request})
         except:
-            serializer = ManageSerializer(instance=obj, 
+            serializer = ManageSerializer(instance=obj,
                                        context={'request':request})
         return Response(serializer.data)
-        
+
     def update(self, request, pk, format=None):
         obj = self.get_object(pk)
         try:
@@ -196,18 +194,18 @@ class ManageView(viewsets.ViewSet):
             template = None
             if template_id is not None: #If None template is passed, we go to Basic template
                 template = Template.objects.get(id=template_id).name
-            else: 
+            else:
                 template = obj.template.name
             serializer_name = CreateTemplate.get_manage_serializer_name(template)
             module = import_module('blogging.custom.'+\
                             CreateTemplate.get_file_name(template))
             serializer_obj = getattr(module, serializer_name)
             serializer = serializer_obj(instance=obj,
-                                        data=request.data, 
+                                        data=request.data,
                                        context={'request':request})
         except:
-            serializer = ManageSerializer(instance=obj, 
-                                          data=request.data, 
+            serializer = ManageSerializer(instance=obj,
+                                          data=request.data,
                                           context={'request':request})
         if serializer.is_valid():
             serializer.save()
@@ -217,7 +215,7 @@ class ManageView(viewsets.ViewSet):
 
     def post(self, request, pk, format=None):
         return self.update(request, pk, format)
-    
+
     def partial_update(self, request, pk, format=None):
         print('Partial')
         obj = self.get_object(pk)
@@ -228,22 +226,22 @@ class ManageView(viewsets.ViewSet):
                             CreateTemplate.get_file_name(template))
             serializer_obj = getattr(module, serializer_name)
             serializer = serializer_obj(instance=obj,
-                                        data=request.data, 
+                                        data=request.data,
                                        context={'request':request})
         except:
-            serializer = ManageSerializer(instance=obj, 
-                                          data=request.data, 
+            serializer = ManageSerializer(instance=obj,
+                                          data=request.data,
                                           context={'request':request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def destroy(self, request, pk, format=None):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-        
+
     #@detail_route(['post', 'put', 'patch', 'delete'])
     @_action(methods=['post', 'put', 'patch', 'delete'], detail=True)
     def publish(self, request, pk, format=None):
@@ -255,17 +253,17 @@ class CustomHTMLRenderer(TemplateHTMLRenderer):
         if response.exception:
             data['status_code'] = response.status_code
         return {'data': data}
-    
+
 class TemplateView(viewsets.ModelViewSet):
     serializer_class = TemplateSerializer
     queryset = Template.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly]
     renderer_classes = (JSONRenderer, BrowsableAPIRenderer, TemplateHTMLRenderer)
 
-    
+
     def create(self, request, format=None):
         #print('Create')
-        serializer = TemplateSerializer(data=request.data, 
+        serializer = TemplateSerializer(data=request.data,
                                        context={'request':request})
         if serializer.is_valid():
             #Create custom template class
@@ -275,11 +273,11 @@ class TemplateView(viewsets.ModelViewSet):
             serializer.save(author = request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def update(self, request, pk, format=None):
         #print('Update')
         obj = self.get_object()
-        serializer = TemplateSerializer(instance=obj, data=request.data, 
+        serializer = TemplateSerializer(instance=obj, data=request.data,
                                        context={'request':request})
         if serializer.is_valid():
             template = CreateTemplate(name=serializer.validated_data.get('name'),
@@ -288,32 +286,32 @@ class TemplateView(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def post(self, request, pk=None, format=None):
         if pk==None:
             return self.create(request, format)
         return self.update(request, pk, format)
-      
+
 #     def put(self, request, pk=None, format=None):
 #         if pk==None:
 #             return self.create(request, format)
 #         return self.update(request, pk, format)
-    
+
     def partial_update(self, request, pk, format=None):
         #print('Partial Here')
         obj = self.get_object()
-        serializer = TemplateSerializer(instance=obj, data=request.data, 
+        serializer = TemplateSerializer(instance=obj, data=request.data,
                                        context={'request':request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def destroy(self, request, pk, format=None):
         obj = self.get_object()
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     @_action(methods=['get'], detail=False)
     def get_form(self, request, format=None):
         if request.query_params.get('entry', None) is not None:
@@ -351,7 +349,7 @@ class TemplateView(viewsets.ModelViewSet):
         else:
             serializer = ManageSerializer(context={'request':request})
             ordering = ['title', 'template', 'text']
-            
+
         return Response(data = {'serializer': serializer,
                                 'ordering': ordering},
                                 template_name = "blogging/template_base_form.html")
