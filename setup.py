@@ -20,7 +20,7 @@ setup(
 	url='https://github.com/PirateLearner/blogging',
 	download_url='https://github.com/PirateLearner/blogging/archive/0.1.1-beta.tar.gz',
 	install_requires=[
-			 "Django ==2.2.24",
+			 "Django ==3.2.24",
 			 "django-classy-tags ==0.4",
 			'html5lib ==1.0b1',
 			'django-mptt ==0.6',
